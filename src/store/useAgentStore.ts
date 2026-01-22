@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Agent, Session } from '../types';
+import type { Agent, Session } from '../types/index';
 
 interface AgentState {
   agents: Agent[];
