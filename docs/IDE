@@ -1,0 +1,313 @@
+WEB-BASED AI IDE SPECIFICATION
+(Kilo-Core Architecture with VS Code–Grade UX)
+
+======================================================================
+1. PURPOSE
+======================================================================
+
+This document defines the functional and technical specification for a
+web-based AI IDE that delivers a VS Code–equivalent user experience backed
+by a microservice-based AI agent platform inspired by Kilo Code.
+
+The system provides:
+- Multi-file code editing
+- Git-based project management
+- AI-assisted coding (vibe coding)
+- Plan and Act agent modes
+- Backend-driven orchestration using MCP, rules, and workflows (invisible)
+
+All intelligence, governance, workflows, rules, MCP configuration, and
+provider configuration are backend-only and invisible to the user.
+
+The frontend is a controlled coding surface and agent interface only.
+
+======================================================================
+2. SCOPE
+======================================================================
+
+IN SCOPE
+- Web-based IDE with VS Code–like layout and behavior
+- Multi-tab file editor
+- File tree and project explorer
+- Git operations (commit, reset, add/delete files)
+- AI assistant with Plan and Act modes
+- Backend-driven agent runtime (Kilo Core)
+- Internal GitHub MCP integration
+- WebSocket-based real-time updates
+
+OUT OF SCOPE (Explicitly Excluded)
+- Terminal
+- Jobs panel
+- Workflow UI
+- Rules UI
+- Provider configuration UI
+- MCP visibility
+- Debugger
+- Extensions marketplace
+- Task queue UI
+- Automation UI
+
+======================================================================
+3. UX SPECIFICATION
+======================================================================
+
+The UI shall replicate the VS Code mental model and interaction patterns.
+
+LAYOUT
+
++---------------------------------------------------------------+
+| Top Bar: Project | Branch | Git Status | Commit | Reset | +File|
++--------------+---------------------------+--------------------+
+| Left Sidebar |        Editor Area        |   Agent Panel      |
+|              |                           |                    |
+| - File Tree  |  Multi-tab Code Editor    | - Chat             |
+| - Search     |  Diff Viewer              | - Plan Mode        |
+|              |                           | - Act Mode         |
+|              |                           | - Change Preview   |
++--------------+---------------------------+--------------------+
+| Status Bar: branch | dirty files | sync | agent state        |
++---------------------------------------------------------------+
+
+REMOVED UI COMPONENTS
+- No terminal
+- No jobs panel
+- No MCP panel
+- No workflows panel
+- No rules panel
+- No provider settings
+- No automation UI
+
+======================================================================
+4. FUNCTIONAL REQUIREMENTS
+======================================================================
+
+4.1 EDITOR
+
+- Monaco-based editor
+- Multi-tab support
+- Syntax highlighting
+- Diff viewer
+- File save and auto-save
+- Keyboard shortcuts aligned with VS Code
+- Undo/redo stack
+- Find and replace
+- Go to definition
+- Code folding
+
+4.2 FILE SYSTEM
+
+- File tree explorer
+- Create file
+- Delete file
+- Rename file
+- Open file
+- Save file
+- Folder navigation
+
+Backed by GitHub repository via backend Repo Service.
+
+4.3 GIT INTEGRATION (TOP BAR)
+
+Displayed:
+- Project name
+- Current branch
+- Dirty file count
+- Sync status
+
+Actions:
+- Commit changes
+- Reset working tree
+- Create file
+- Delete file
+
+All Git operations are routed through the backend Repo Service using the
+internal GitHub MCP server.
+
+4.4 AI AGENT PANEL
+
+MODES
+
+PLAN MODE
+- Analyzes repository
+- Produces structured execution plan
+- Shows proposed file changes (diff preview)
+- Explains approach
+
+ACT MODE
+- Executes plan
+- Applies patches
+- Validates changes
+- Updates files in workspace
+
+CAPABILITIES
+- Vibe coding (intent → plan → patch)
+- Refactor requests
+- Feature implementation
+- Bug fixing
+- Code explanation
+
+INVISIBLE TO USER
+- Tool calls
+- MCP servers
+- Workflow execution
+- Provider routing
+- Rule enforcement
+
+======================================================================
+5. BACKEND ARCHITECTURE
+======================================================================
+
+HIGH-LEVEL ARCHITECTURE
+
+React IDE
+   |
+   v
+API Gateway (Backend-for-Frontend)
+   |
+   +-- Agent Runtime (Kilo Core)
+   +-- Repo Service
+   +-- MCP Router (internal only)
+   +-- Provider Router
+   +-- Rule Engine
+   +-- Key Vault
+
+======================================================================
+6. SERVICE RESPONSIBILITIES
+======================================================================
+
+6.1 API GATEWAY (BFF)
+
+Responsibilities:
+- Authentication
+- Session management
+- WebSocket orchestration
+- Request routing
+- Streaming responses
+
+Protocols:
+- REST for metadata and file operations
+- WebSocket for real-time updates and agent streaming
+
+6.2 AGENT RUNTIME (KILO CORE)
+
+Responsibilities:
+- Vibe coding execution loop
+- Plan generation
+- Tool orchestration
+- Patch synthesis
+- Validation and rule enforcement
+
+Execution model:
+
+Intent → Plan → Tool Loop → Patch → Validate → Respond
+
+6.3 REPO SERVICE
+
+Responsibilities:
+- GitHub repository integration
+- File system abstraction
+- Git operations
+- Branch management
+- Diff generation
+
+Backed by GitHub MCP server.
+
+6.4 MCP ROUTER (INTERNAL ONLY)
+
+Responsibilities:
+- Tool discovery
+- Tool execution
+- Capability routing
+- Streaming tool output
+
+Invisible to frontend.
+
+6.5 PROVIDER ROUTER
+
+Responsibilities:
+- Model routing
+- Cost policy enforcement
+- Latency policy enforcement
+- Security policy enforcement
+
+Supported providers:
+- OpenAI
+- Anthropic
+- DeepSeek
+- Local models
+- Enterprise models
+
+6.6 RULE ENGINE
+
+Responsibilities:
+- Coding standards enforcement
+- Security rules
+- Architecture policies
+- Patch validation
+
+Rules are enforced:
+- During planning
+- Before patch application
+- Before commit
+
+6.7 KEY VAULT
+
+Responsibilities:
+- Secure storage of provider API keys
+- AES-256 encryption
+- Per-tenant isolation
+- Zero frontend exposure
+
+======================================================================
+7. TRANSPORT LAYER
+======================================================================
+
+WEBSOCKET
+Used for:
+- Agent streaming output
+- File updates
+- Git status updates
+- Editor synchronization
+
+REST
+Used for:
+- Project metadata
+- File tree
+- File operations
+- Git operations
+
+======================================================================
+8. SECURITY
+======================================================================
+
+- OAuth authentication (GitHub)
+- JWT-based session tokens
+- Encrypted API keys
+- Per-tenant isolation
+- Zero trust frontend
+- Backend-only provider access
+- Backend-only MCP access
+
+======================================================================
+9. NON-FUNCTIONAL REQUIREMENTS
+======================================================================
+
+- VS Code–grade responsiveness
+- Real-time collaboration ready
+- Horizontal scalability
+- Fault isolation via microservices
+- Auditable agent actions
+- Deterministic workflow execution
+- Zero tool exposure to frontend
+
+======================================================================
+10. RESULTING SYSTEM
+
+The resulting system is a web-native IDE with:
+- VS Code UX
+- Kilo-grade agent intelligence
+- Invisible governance and automation
+- Enterprise-grade backend control
+
+The user experiences a simple, powerful coding environment.
+The platform retains full operational control.
