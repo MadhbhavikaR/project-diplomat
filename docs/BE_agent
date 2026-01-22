@@ -1,0 +1,300 @@
+KILO-CORE MEMORY ARCHITECTURE SPECIFICATION
+(Scalable Hybrid Memory Model for Web-Based AI IDE)
+
+======================================================================
+1. PURPOSE
+======================================================================
+
+This document defines the specification for a scalable hybrid memory
+architecture for a Kilo-Core AI coding service and web-based IDE.
+
+The memory system is designed to:
+- Support browser-side caching for responsiveness
+- Maintain backend-authoritative execution memory
+- Synchronize context on demand
+- Support at least 1000 concurrent users
+- Preserve determinism, auditability, and governance
+
+The architecture enables VS Code–grade UX with cloud-scale reliability.
+
+======================================================================
+2. DESIGN GOALS
+======================================================================
+
+- Support 1000+ concurrent IDE sessions
+- Maintain sub-100ms UI responsiveness
+- Ensure backend-authoritative state
+- Enable stateless horizontal scaling
+- Provide deterministic agent execution
+- Enforce security and governance
+- Support multi-tenant isolation
+
+======================================================================
+3. MEMORY MODEL OVERVIEW
+======================================================================
+
+Memory is implemented as a three-tier hybrid model:
+
++-----------------------------------------------------------+
+|                   Authoritative Memory (Backend)          |
+|                                                           |
+|  - Agent execution memory                                 |
+|  - Workflow state                                         |
+|  - Tool execution logs                                    |
+|  - Rule evaluations                                       |
+|  - Audit history                                          |
+|  - Semantic embeddings                                    |
++-----------------------------------------------------------+
+
++-----------------------------------------------------------+
+|                   Ephemeral Memory (Browser Cache)        |
+|                                                           |
+|  - Chat history                                           |
+|  - Current plan                                          |
+|  - Open files                                            |
+|  - Cursor context                                        |
+|  - Local diffs                                           |
+|  - User notes                                            |
++-----------------------------------------------------------+
+
++-----------------------------------------------------------+
+|                   Transport Memory (Session Layer)        |
+|                                                           |
+|  - Streaming buffers                                     |
+|  - Partial plans                                         |
+|  - Tool output                                           |
++-----------------------------------------------------------+
+
+======================================================================
+4. SCALABILITY TARGETS
+======================================================================
+
+Concurrency:
+- Minimum 1000 concurrent users
+- 500 active agent sessions
+- 200 simultaneous plan/act executions
+
+Latency:
+- UI updates < 50ms
+- Agent response streaming < 150ms
+- File operations < 100ms
+
+Throughput:
+- 10k WebSocket messages/sec
+- 2k REST requests/sec
+- 500 concurrent agent executions
+
+======================================================================
+5. BROWSER MEMORY LAYER
+======================================================================
+
+Browser memory is used for session-scoped, latency-sensitive context.
+
+Characteristics:
+- Non-authoritative
+- Disposable
+- Encrypted at rest
+- Session-bound
+- Project-scoped
+
+Storage:
+- IndexedDB for persistence
+- In-memory store (Zustand/Redux) for active state
+
+Cached Data:
+- Chat transcript (last N messages)
+- Current execution plan
+- Open file snapshots
+- Local diff previews
+- Cursor and selection context
+- Repo tree snapshot
+
+Cache Layout:
+
+browser_cache/
+  session.json
+  chat.json
+  plan.json
+  open_files.json
+  diffs.json
+  context.json
+
+======================================================================
+6. BACKEND MEMORY LAYER
+======================================================================
+
+Backend memory is the authoritative execution source.
+
+Storage:
+- Redis (hot execution memory)
+- PostgreSQL (persistent metadata)
+- Vector DB (semantic memory)
+- Object store (snapshots)
+- Vault (secrets)
+
+Memory Domains:
+- Agent execution state
+- Workflow state
+- Tool execution logs
+- Rule evaluation results
+- Patch history
+- Audit records
+
+Characteristics:
+- Encrypted
+- Versioned
+- Audited
+- Immutable execution records
+
+======================================================================
+7. MEMORY SYNCHRONIZATION MODEL
+======================================================================
+
+Synchronization is explicit and on-demand.
+
+Browser → Backend
+Triggered when:
+- User enters Plan mode
+- User enters Act mode
+- User requests code change
+- User asks agent question
+- User approves patch
+
+Payload includes:
+- Chat window
+- Current plan
+- Selected files
+- Open file snapshots
+- Cursor context
+- Local notes
+- Local diffs
+
+Backend → Browser
+Triggered when:
+- Agent streams output
+- Plan is generated
+- Diff is ready
+- Patch is applied
+- Rule validation fails
+
+Payload includes:
+- Updated plan
+- Explanation
+- Diff preview
+- Validation result
+- Execution status
+
+======================================================================
+8. MEMORY MERGE STRATEGY
+======================================================================
+
+Backend performs authoritative merge:
+
+1. Validate browser payload
+2. Deduplicate memory entries
+3. Score relevance
+4. Apply rule filters
+5. Trim context window
+6. Merge into execution memory
+7. Persist audit trail
+
+Browser memory is advisory only.
+
+======================================================================
+9. MULTI-TENANCY MODEL
+======================================================================
+
+Memory is isolated per:
+- Organization
+- Project
+- User session
+
+Isolation is enforced at:
+- API Gateway
+- Memory service
+- Vector DB
+- Cache layer
+
+Tenant boundaries are cryptographically enforced.
+
+======================================================================
+10. TRANSPORT ARCHITECTURE
+======================================================================
+
+Protocols:
+- WebSocket for streaming and sync
+- REST for memory fetch and persistence
+
+Message Broker:
+- Redis Streams or Kafka
+- Backpressure aware
+- Partitioned by tenant
+
+======================================================================
+11. SCALABILITY ARCHITECTURE
+======================================================================
+
+Deployment:
+- Kubernetes
+- Horizontal Pod Autoscaling
+- Stateless API Gateway
+- Stateless Agent Runtime
+
+Execution:
+- Worker pool
+- Async execution
+- Distributed locking
+- Idempotent operations
+
+Caching:
+- Redis cluster
+- CDN for static assets
+- Edge WebSocket termination
+
+======================================================================
+12. FAULT TOLERANCE
+======================================================================
+
+- Session recovery via memory replay
+- Agent restart with state reload
+- Automatic failover
+- Circuit breakers
+- Retry policies
+
+======================================================================
+13. SECURITY
+======================================================================
+
+- Encrypted browser cache
+- TLS everywhere
+- JWT session tokens
+- Role-based access
+- Audit logging
+- Zero-trust frontend
+- Backend-only provider access
+
+======================================================================
+14. OBSERVABILITY
+======================================================================
+
+- Distributed tracing
+- Memory usage metrics
+- Session metrics
+- Execution timelines
+- Per-tenant dashboards
+
+======================================================================
+15. RESULTING SYSTEM
+
+The resulting memory architecture enables:
+
+- VS Code–grade responsiveness
+- Cloud-scale concurrency (1000+ users)
+- Deterministic AI execution
+- Auditable agent behavior
+- Secure multi-tenant isolation
+- Stateless horizontal scaling
+
+The browser acts as a performance cache.
+The backend remains the single source of truth.
+The system operates as a distributed AI coding platform.
