@@ -1,0 +1,171 @@
+# ADK-WEB React Application - Canary Deployment
+# Kubernetes deployment configuration for canary testing
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: adk-web-canary
+  namespace: adk-web-production
+  labels:
+    app: adk-web
+    environment: production
+    tier: frontend
+    deployment: canary
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: adk-web
+      environment: production
+      deployment: canary
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: adk-web
+        environment: production
+        tier: frontend
+        deployment: canary
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "80"
+    spec:
+      containers:
+      - name: adk-web
+        image: your-registry.io/adk-web-react:${{ github.sha }}
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+          name: http
+          protocol: TCP
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: API_BASE_URL
+          value: "https://api.adk-web.production"
+        - name: APP_VERSION
+          value: "1.0.0"
+        - name: ENABLE_ANALYTICS
+          value: "true"
+        - name: LOG_LEVEL
+          value: "info"
+        - name: FEATURE_FLAGS
+          value: "canary=true"
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 80
+          initialDelaySeconds: 15
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+      nodeSelector:
+        environment: production
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - adk-web
+              topologyKey: "kubernetes.io/hostname"
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: adk-web-canary
+  namespace: adk-web-production
+  labels:
+    app: adk-web
+    environment: production
+    tier: frontend
+    deployment: canary
+spec:
+  type: ClusterIP
+  selector:
+    app: adk-web
+    environment: production
+    deployment: canary
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+    protocol: TCP
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: adk-web-canary
+  namespace: adk-web-production
+  labels:
+    app: adk-web
+    environment: production
+    tier: frontend
+    deployment: canary
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-production"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/canary: "true"
+    nginx.ingress.kubernetes.io/canary-by-header: "X-Canary"
+    nginx.ingress.kubernetes.io/canary-by-header-value: "enabled"
+    nginx.ingress.kubernetes.io/canary-weight: "10"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://adk-web.production"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
+    nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
+    nginx.ingress.kubernetes.io/cors-max-age: "86400"
+spec:
+  tls:
+  - hosts:
+    - adk-web.production
+    secretName: adk-web-production-tls
+  rules:
+  - host: adk-web.production
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: adk-web-canary
+            port:
+              number: 80

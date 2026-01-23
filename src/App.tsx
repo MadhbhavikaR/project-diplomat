@@ -9,17 +9,17 @@ import SessionTabComponent from './components/session-tab/SessionTabComponent'
 
 function App() {
   const [showSidePanel, setShowSidePanel] = useState(true)
-  const [selectedEvent, setSelectedEvent] = useState<any>(null)
+  const [, setSelectedEvent] = useState<any>(null)
   const [activeTab, setActiveTab] = useState(0)
-  const [sessionId, setSessionId] = useState('session1')
+  const [sessionId] = useState('session1')
 
   // Mock data for demonstration
   const mockApps = ['App 1', 'App 2', 'App 3']
   const mockEvents = new Map([
-    ['event1', { title: 'Event 1', data: { key: 'value1' } }],
-    ['event2', { title: 'Event 2', data: { key: 'value2' } }],
+    ['event1', { id: 'event1', title: 'Event 1', data: { key: 'value1' } }],
+    ['event2', { id: 'event2', title: 'Event 2', data: { key: 'value2' } }],
   ])
-  const mockTraceData = []
+  const mockTraceData: any[] = []
 
   const handleClosePanel = () => {
     setShowSidePanel(false)
@@ -146,13 +146,6 @@ function App() {
 
         <Routes>
           <Route path="/" element={<ChatComponent />} />
-          <Route path="/sessions" element={<SessionTabComponent
-            userId="user123"
-            appName="ADK Demo"
-            sessionId={sessionId}
-            onSessionSelected={(session) => console.log('Session selected:', session)}
-            onSessionReloaded={(session) => console.log('Session reloaded:', session)}
-          />} />
         </Routes>
       </div>
     </div>

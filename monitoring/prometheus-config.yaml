@@ -1,0 +1,222 @@
+# Prometheus Configuration for ADK-WEB React Application
+# Comprehensive monitoring setup for production environment
+
+# Global configuration
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+  external_labels:
+    environment: production
+    cluster: adk-web
+    region: us-east-1
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+# Rule files
+rule_files:
+  - "/etc/prometheus/rules/*.rules"
+
+# Scrape configurations
+scrape_configs:
+  # Kubernetes API server
+  - job_name: 'kubernetes-apiservers'
+    kubernetes_sd_configs:
+      - role: endpoints
+        namespaces:
+          names:
+            - default
+    scheme: https
+    tls_config:
+      ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+      insecure_skip_verify: true
+    bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+        action: keep
+        regex: default;kubernetes;https
+
+  # Kubernetes nodes
+  - job_name: 'kubernetes-nodes'
+    kubernetes_sd_configs:
+      - role: node
+    scheme: https
+    tls_config:
+      ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+      insecure_skip_verify: true
+    bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+    relabel_configs:
+      - action: labelmap
+        regex: __meta_kubernetes_node_label_(.+)
+      - target_label: __address__
+        replacement: kubernetes.default.svc:443
+      - source_labels: [__meta_kubernetes_node_name]
+        regex: (.+)
+        target_label: __metrics_path__
+        replacement: /api/v1/nodes/${1}/proxy/metrics
+
+  # Kubernetes pods
+  - job_name: 'kubernetes-pods'
+    kubernetes_sd_configs:
+      - role: pod
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+        action: keep
+        regex: true
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+        action: replace
+        target_label: __metrics_path__
+        regex: (.+)
+      - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+        action: replace
+        regex: ([^:]+)(?::\d+)?;(\d+)
+        replacement: $1:$2
+        target_label: __address__
+      - action: labelmap
+        regex: __meta_kubernetes_pod_label_(.+)
+      - source_labels: [__meta_kubernetes_namespace]
+        action: replace
+        target_label: kubernetes_namespace
+      - source_labels: [__meta_kubernetes_pod_name]
+        action: replace
+        target_label: kubernetes_pod_name
+
+  # Kubernetes services
+  - job_name: 'kubernetes-services'
+    kubernetes_sd_configs:
+      - role: service
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_probe]
+        action: keep
+        regex: true
+      - source_labels: [__address__]
+        target_label: __param_target
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+      - source_labels: [__param_target]
+        target_label: instance
+      - action: labelmap
+        regex: __meta_kubernetes_service_label_(.+)
+      - source_labels: [__meta_kubernetes_namespace]
+        target_label: kubernetes_namespace
+      - source_labels: [__meta_kubernetes_service_name]
+        target_label: kubernetes_service_name
+
+  # ADK-WEB React Application
+  - job_name: 'adk-web-react'
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+            - adk-web-production
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        action: keep
+        regex: adk-web
+      - source_labels: [__meta_kubernetes_pod_container_port_number]
+        action: keep
+        regex: 80
+      - source_labels: [__address__]
+        regex: '(.+):\d+'
+        replacement: '${1}:80'
+        target_label: __address__
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: '(requests_total|response_time_seconds|error_rate|memory_usage_bytes|cpu_usage_seconds)'
+        action: keep
+
+  # Node Exporter
+  - job_name: 'node-exporter'
+    kubernetes_sd_configs:
+      - role: node
+    relabel_configs:
+      - action: labelmap
+        regex: __meta_kubernetes_node_label_(.+)
+      - target_label: __address__
+        replacement: kubernetes.default.svc:443
+      - source_labels: [__meta_kubernetes_node_name]
+        regex: (.+)
+        target_label: __metrics_path__
+        replacement: /api/v1/nodes/${1}/proxy/metrics
+
+  # Blackbox Exporter for HTTP probes
+  - job_name: 'blackbox-http'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - https://adk-web.production
+          - https://api.adk-web.production
+          - https://staging.adk-web.production
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+# Alert rules
+# These would be in separate files in /etc/prometheus/rules/
+# Example alert rules for ADK-WEB:
+#
+# groups:
+# - name: adk-web-alerts
+#   rules:
+#   - alert: HighErrorRate
+#     expr: rate(error_rate[5m]) > 0.1
+#     for: 5m
+#     labels:
+#       severity: critical
+#       team: frontend
+#     annotations:
+#       summary: "High error rate in ADK-WEB application"
+#       description: "Error rate is {{ $value }} for the last 5 minutes"
+#
+#   - alert: HighResponseTime
+#     expr: response_time_seconds > 2
+#     for: 5m
+#     labels:
+#       severity: warning
+#       team: frontend
+#     annotations:
+#       summary: "High response time in ADK-WEB application"
+#       description: "Response time is {{ $value }} seconds"
+#
+#   - alert: LowAvailability
+#     expr: up == 0
+#     for: 1m
+#     labels:
+#       severity: critical
+#       team: devops
+#     annotations:
+#       summary: "ADK-WEB application is down"
+#       description: "Application instance {{ $labels.instance }} is not responding"
+
+# Remote write configuration (for long-term storage)
+remote_write:
+  - url: https://prometheus-long-term-storage:9090/api/v1/write
+    basic_auth:
+      username: prometheus
+      password: your-password
+    queue_config:
+      max_samples_per_send: 1000
+      max_shards: 200
+      capacity: 2500
+
+# Remote read configuration
+remote_read:
+  - url: https://prometheus-long-term-storage:9090/api/v1/read
+    basic_auth:
+      username: prometheus
+      password: your-password
+    read_recent: true
