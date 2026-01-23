@@ -21,7 +21,10 @@ interface DemoRepoStore {
   files: Record<string, string>
 }
 
+interface DemoGitStatusStore extends GitStatus {}
+
 let demoRepoStore: DemoRepoStore | null = null
+let demoGitStatusStore: DemoGitStatusStore | null = null
 
 const getDemoRepoStore = async (): Promise<DemoRepoStore> => {
   if (demoRepoStore) {
@@ -32,6 +35,22 @@ const getDemoRepoStore = async (): Promise<DemoRepoStore> => {
   const files = await loadDemoData<Record<string, string>>('repo-files.json', {})
   demoRepoStore = { tree, files }
   return demoRepoStore
+}
+
+const getDemoGitStatusStore = async (): Promise<DemoGitStatusStore> => {
+  if (demoGitStatusStore) {
+    return demoGitStatusStore
+  }
+
+  const fallback: DemoGitStatusStore = {
+    branch: 'demo/main',
+    dirtyCount: 0,
+    ahead: 1,
+    behind: 0,
+  }
+  const demoStatus = await loadDemoData<DemoGitStatusStore>('git-status-bar.json', fallback)
+  demoGitStatusStore = { ...fallback, ...demoStatus }
+  return demoGitStatusStore
 }
 
 const addNodeToTree = (items: FileNode[], basePath: string, newNode: FileNode): FileNode[] => {
@@ -130,6 +149,8 @@ class RepoService {
         type: 'file',
       })
       store.files[path] = ''
+      const status = await getDemoGitStatusStore()
+      status.dirtyCount += 1
       return
     }
 
@@ -173,6 +194,8 @@ class RepoService {
           delete store.files[filePath]
         }
       })
+      const status = await getDemoGitStatusStore()
+      status.dirtyCount = Math.max(0, status.dirtyCount - 1)
       return
     }
 
@@ -211,12 +234,7 @@ class RepoService {
 
   async getGitStatus(repoPath: string): Promise<GitStatus> {
     if (getRuntimeConfig().demoMode) {
-      return {
-        branch: 'demo/main',
-        dirtyCount: 2,
-        ahead: 1,
-        behind: 0,
-      }
+      return getDemoGitStatusStore()
     }
 
     const { repoApiBase } = getRuntimeConfig()

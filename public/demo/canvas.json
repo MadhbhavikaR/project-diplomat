@@ -1,0 +1,27 @@
+{
+  "nodes": [
+    {
+      "id": "node-1",
+      "type": "agent",
+      "title": "Demo Agent",
+      "position": { "x": 160, "y": 120 },
+      "tools": ["google_search"],
+      "callbacks": ["pre_model"],
+      "inputs": ["prompt"],
+      "outputs": ["response"]
+    },
+    {
+      "id": "node-2",
+      "type": "tool",
+      "title": "google_search",
+      "position": { "x": 520, "y": 140 },
+      "tools": [],
+      "callbacks": [],
+      "inputs": ["query"],
+      "outputs": ["results"]
+    }
+  ],
+  "edges": [
+    { "id": "edge-1", "source": "node-1", "target": "node-2", "label": "uses" }
+  ]
+}

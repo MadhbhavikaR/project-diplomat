@@ -1,0 +1,17 @@
+{
+  "demo-session-1": {
+    "state": "active",
+    "variables": {
+      "agentName": "Demo Builder",
+      "lastTool": "google_search"
+    },
+    "updatedAt": "2026-01-23T09:06:30Z"
+  },
+  "demo-session-2": {
+    "state": "paused",
+    "variables": {
+      "agentName": "Tooling Assistant"
+    },
+    "updatedAt": "2026-01-23T10:06:30Z"
+  }
+}

@@ -93,6 +93,7 @@
   position: relative;
   min-height: 320px;
   transform-origin: top left;
+  overflow: visible;
 }
 
 .canvas-node {
@@ -127,6 +128,15 @@
 .canvas-node.connecting {
   border-color: #ef6c00;
   box-shadow: 0 0 0 2px rgba(239, 108, 0, 0.2);
+}
+
+.canvas-node.connecting .connection-handle.outgoing {
+  width: 20px;
+  height: 20px;
+}
+
+.canvas-node.connecting-active:not(.disabled-connect):not(.connecting) .connection-handle.incoming {
+  animation: handle-pulse 1s ease-in-out infinite;
 }
 
 .canvas-node.agent {
@@ -220,6 +230,17 @@
   cursor: pointer;
 }
 
+.canvas-node.selected .connection-handle {
+  width: 18px;
+  height: 18px;
+}
+
+.canvas-node.selected .connection-handle.outgoing:hover,
+.canvas-node.selected.connecting .connection-handle.outgoing {
+  width: 20px;
+  height: 20px;
+}
+
 .connection-handle.incoming {
   left: -7px;
   box-shadow: inset 0 0 0 3px #ffffff;
@@ -230,6 +251,22 @@
   background-color: #90a4ae;
   border-color: #90a4ae;
 }
+
+@keyframes handle-pulse {
+  0% {
+    transform: translateY(-50%) scale(1);
+    box-shadow: 0 0 0 0 rgba(25, 118, 210, 0.4);
+  }
+  50% {
+    transform: translateY(-50%) scale(1.12);
+    box-shadow: 0 0 0 6px rgba(25, 118, 210, 0);
+  }
+  100% {
+    transform: translateY(-50%) scale(1);
+    box-shadow: 0 0 0 0 rgba(25, 118, 210, 0);
+  }
+}
+
 
 .canvas-node-editor {
   display: flex;
@@ -271,6 +308,7 @@
   width: 100%;
   height: 100%;
   pointer-events: none;
+  overflow: visible;
 }
 
 .canvas-edges path {

@@ -1,0 +1,15 @@
+{
+  "demo-session-1": [
+    {
+      "id": "artifact-1",
+      "messageId": "msg-1",
+      "type": "code",
+      "name": "agent-config.json",
+      "content": "{\n  \"name\": \"Demo Agent\",\n  \"model\": \"gemini-2.5-flash\"\n}",
+      "mimeType": "application/json",
+      "size": 58,
+      "createdAt": "2026-01-23T09:06:00Z"
+    }
+  ],
+  "demo-session-2": []
+}

@@ -1,0 +1,5 @@
+{
+  "rootPath": "/repo",
+  "treeSource": "repo-tree.json",
+  "notes": "Explorer reads from repo-tree.json and repo-files.json in demo mode."
+}

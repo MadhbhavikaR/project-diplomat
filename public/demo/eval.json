@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "id": "eval-1",
+      "name": "Greeting quality",
+      "status": "passing",
+      "lastRun": "2026-01-23T09:20:00Z"
+    },
+    {
+      "id": "eval-2",
+      "name": "Tool routing",
+      "status": "needs-review",
+      "lastRun": "2026-01-23T09:25:00Z"
+    }
+  ]
+}

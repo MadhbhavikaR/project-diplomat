@@ -39,6 +39,10 @@ const BuilderAssistantComponent: React.FC<BuilderAssistantComponentProps> = ({
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [activeTab, setActiveTab] = useState<'chat' | 'help'>('chat');
   const chatMessagesRef = useRef<HTMLDivElement>(null);
+  const tabRailRef = useRef<HTMLDivElement>(null);
+  const [canScrollTabRailUp, setCanScrollTabRailUp] = useState(false);
+  const [canScrollTabRailDown, setCanScrollTabRailDown] = useState(false);
+  const [isTabRailCollapsed, setIsTabRailCollapsed] = useState(false);
   const assistantMode = useStore(state => state.assistantMode);
   const setAssistantMode = useStore(state => state.setAssistantMode);
 
@@ -213,6 +217,32 @@ const BuilderAssistantComponent: React.FC<BuilderAssistantComponentProps> = ({
     setAssistantMode(assistantMode === 'plan' ? 'act' : 'plan');
   };
 
+  const updateTabRailScroll = () => {
+    const rail = tabRailRef.current;
+    if (!rail) return;
+    setCanScrollTabRailUp(rail.scrollTop > 0);
+    setCanScrollTabRailDown(rail.scrollTop + rail.clientHeight < rail.scrollHeight - 1);
+  };
+
+  const scrollTabRailBy = (delta: number) => {
+    const rail = tabRailRef.current;
+    if (!rail) return;
+    rail.scrollBy({ top: delta, behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    updateTabRailScroll();
+    const rail = tabRailRef.current;
+    if (!rail) return;
+    const handleScroll = () => updateTabRailScroll();
+    rail.addEventListener('scroll', handleScroll);
+    window.addEventListener('resize', handleScroll);
+    return () => {
+      rail.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [activeTab, isVisible]);
+
   if (!isVisible) return null;
 
   return (
@@ -236,26 +266,60 @@ const BuilderAssistantComponent: React.FC<BuilderAssistantComponentProps> = ({
 
       <div className="panel-content">
         <div className="assistant-tab-layout">
-          <div className="assistant-tab-rail" role="tablist" aria-orientation="vertical">
+          <div className={`assistant-tab-rail ${isTabRailCollapsed ? 'collapsed' : ''}`} role="tablist" aria-orientation="vertical">
             <button
-              className={`assistant-tab-button ${activeTab === 'chat' ? 'active' : ''}`}
-              onClick={() => setActiveTab('chat')}
-              aria-label="Chat"
+              type="button"
+              className="assistant-tab-scroll"
+              onClick={() => scrollTabRailBy(-80)}
+              disabled={!canScrollTabRailUp}
+              aria-label="Scroll tabs up"
             >
               <span className="material-symbols-outlined" aria-hidden>
-                chat
+                expand_less
               </span>
-              <span className="tab-label">Chat</span>
+            </button>
+            <div className="assistant-tab-scroll-area" ref={tabRailRef}>
+              <button
+                className={`assistant-tab-button ${activeTab === 'chat' ? 'active' : ''}`}
+                onClick={() => setActiveTab('chat')}
+                aria-label="Chat"
+              >
+                <span className="material-symbols-outlined" aria-hidden>
+                  chat
+                </span>
+                <span className="tab-label">Chat</span>
+              </button>
+              <button
+                className={`assistant-tab-button ${activeTab === 'help' ? 'active' : ''}`}
+                onClick={() => setActiveTab('help')}
+                aria-label="Help"
+              >
+                <span className="material-symbols-outlined" aria-hidden>
+                  help
+                </span>
+                <span className="tab-label">Help</span>
+              </button>
+            </div>
+            <button
+              type="button"
+              className="assistant-tab-scroll"
+              onClick={() => scrollTabRailBy(80)}
+              disabled={!canScrollTabRailDown}
+              aria-label="Scroll tabs down"
+            >
+              <span className="material-symbols-outlined" aria-hidden>
+                expand_more
+              </span>
             </button>
             <button
-              className={`assistant-tab-button ${activeTab === 'help' ? 'active' : ''}`}
-              onClick={() => setActiveTab('help')}
-              aria-label="Help"
+              type="button"
+              className="assistant-tab-collapse"
+              onClick={() => setIsTabRailCollapsed((prev) => !prev)}
+              aria-label={isTabRailCollapsed ? 'Expand tabs' : 'Collapse tabs'}
             >
               <span className="material-symbols-outlined" aria-hidden>
-                help
+                {isTabRailCollapsed ? 'chevron_right' : 'chevron_left'}
               </span>
-              <span className="tab-label">Help</span>
             </button>
           </div>
           <div className="assistant-tab-body">

@@ -1,0 +1,4 @@
+{
+  "stages": ["pre_callback", "post_callback", "pre_model", "post_model"],
+  "suggestedCallbacks": ["log_request", "sanitize_output"]
+}

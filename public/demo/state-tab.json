@@ -1,0 +1,4 @@
+{
+  "sections": ["variables", "metadata", "deltas"],
+  "defaultSection": "variables"
+}

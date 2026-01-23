@@ -1,0 +1,10 @@
+{
+  "activeTab": "sessions",
+  "tabs": [
+    { "id": "sessions", "label": "Sessions" },
+    { "id": "events", "label": "Events" },
+    { "id": "trace", "label": "Trace" },
+    { "id": "artifacts", "label": "Artifacts" },
+    { "id": "state", "label": "State" }
+  ]
+}

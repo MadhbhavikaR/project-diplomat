@@ -1,0 +1,10 @@
+{
+  "content": {
+    "role": "model",
+    "parts": [
+      {
+        "text": "Second demo chunk. The app will read these files in order for each send action."
+      }
+    ]
+  }
+}

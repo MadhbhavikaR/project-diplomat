@@ -1,0 +1,8 @@
+{
+  "branch": "demo/main",
+  "dirtyCount": 2,
+  "ahead": 1,
+  "behind": 0,
+  "staged": ["/repo/demo/agent.json"],
+  "unstaged": ["/repo/src/main.ts"]
+}

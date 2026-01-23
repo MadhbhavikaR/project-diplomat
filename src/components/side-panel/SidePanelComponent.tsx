@@ -96,9 +96,13 @@ const SidePanelComponent: React.FC<SidePanelProps> = ({
   const [isResizing, setIsResizing] = useState(false)
   const resizeStartX = useRef(0)
   const resizeStartWidth = useRef(0)
+  const tabRailRef = useRef<HTMLDivElement | null>(null)
+  const [canScrollTabRailUp, setCanScrollTabRailUp] = useState(false)
+  const [canScrollTabRailDown, setCanScrollTabRailDown] = useState(false)
   const [panelWidth, setPanelWidth] = useState<number>(
     typeof uiState?.sidePanelWidth === 'number' ? uiState.sidePanelWidth : 320
   )
+  const [isTabRailCollapsed, setIsTabRailCollapsed] = useState(false)
 
   // Filter apps based on search term
   const filteredApps = apps.filter(app =>
@@ -134,6 +138,32 @@ const SidePanelComponent: React.FC<SidePanelProps> = ({
         navigate('/')
     }
   }
+
+  const updateTabRailScroll = () => {
+    const rail = tabRailRef.current
+    if (!rail) return
+    setCanScrollTabRailUp(rail.scrollTop > 0)
+    setCanScrollTabRailDown(rail.scrollTop + rail.clientHeight < rail.scrollHeight - 1)
+  }
+
+  const scrollTabRailBy = (delta: number) => {
+    const rail = tabRailRef.current
+    if (!rail) return
+    rail.scrollBy({ top: delta, behavior: 'smooth' })
+  }
+
+  useEffect(() => {
+    updateTabRailScroll()
+    const rail = tabRailRef.current
+    if (!rail) return
+    const handleScroll = () => updateTabRailScroll()
+    rail.addEventListener('scroll', handleScroll)
+    window.addEventListener('resize', handleScroll)
+    return () => {
+      rail.removeEventListener('scroll', handleScroll)
+      window.removeEventListener('resize', handleScroll)
+    }
+  }, [activeTab, appName, showSidePanel])
 
   const handleAppChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     onAppSelectionChange(event)
@@ -320,56 +350,90 @@ const SidePanelComponent: React.FC<SidePanelProps> = ({
           ) : (
             <>
               <div className="tab-layout">
-                <div className="tab-rail" role="tablist" aria-orientation="vertical">
+                <div className={`tab-rail ${isTabRailCollapsed ? 'collapsed' : ''}`} role="tablist" aria-orientation="vertical">
                   <button
-                    className={`tab-button ${activeTab === 0 ? 'active' : ''}`}
-                    onClick={() => handleTabChange(0)}
-                    aria-label="Sessions"
+                    type="button"
+                    className="tab-rail-scroll"
+                    onClick={() => scrollTabRailBy(-80)}
+                    disabled={!canScrollTabRailUp}
+                    aria-label="Scroll tabs up"
                   >
                     <span className="material-symbols-outlined" aria-hidden>
-                      forum
+                      expand_less
                     </span>
-                    <span className="tab-label">Sessions</span>
+                  </button>
+                  <div className="tab-rail-scroll-area" ref={tabRailRef}>
+                    <button
+                      className={`tab-button ${activeTab === 0 ? 'active' : ''}`}
+                      onClick={() => handleTabChange(0)}
+                      aria-label="Sessions"
+                    >
+                      <span className="material-symbols-outlined" aria-hidden>
+                        forum
+                      </span>
+                      <span className="tab-label">Sessions</span>
+                    </button>
+                    <button
+                      className={`tab-button ${activeTab === 1 ? 'active' : ''}`}
+                      onClick={() => handleTabChange(1)}
+                      aria-label="Trace"
+                    >
+                      <span className="material-symbols-outlined" aria-hidden>
+                        timeline
+                      </span>
+                      <span className="tab-label">Trace</span>
+                    </button>
+                    <button
+                      className={`tab-button ${activeTab === 2 ? 'active' : ''}`}
+                      onClick={() => handleTabChange(2)}
+                      aria-label="Events"
+                    >
+                      <span className="material-symbols-outlined" aria-hidden>
+                        event_note
+                      </span>
+                      <span className="tab-label">Events</span>
+                    </button>
+                    <button
+                      className={`tab-button ${activeTab === 3 ? 'active' : ''}`}
+                      onClick={() => handleTabChange(3)}
+                      aria-label="State"
+                    >
+                      <span className="material-symbols-outlined" aria-hidden>
+                        data_object
+                      </span>
+                      <span className="tab-label">State</span>
+                    </button>
+                    <button
+                      className={`tab-button ${activeTab === 4 ? 'active' : ''}`}
+                      onClick={() => handleTabChange(4)}
+                      aria-label="Artifacts"
+                    >
+                      <span className="material-symbols-outlined" aria-hidden>
+                        inventory_2
+                      </span>
+                      <span className="tab-label">Artifacts</span>
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    className="tab-rail-scroll"
+                    onClick={() => scrollTabRailBy(80)}
+                    disabled={!canScrollTabRailDown}
+                    aria-label="Scroll tabs down"
+                  >
+                    <span className="material-symbols-outlined" aria-hidden>
+                      expand_more
+                    </span>
                   </button>
                   <button
-                    className={`tab-button ${activeTab === 1 ? 'active' : ''}`}
-                    onClick={() => handleTabChange(1)}
-                    aria-label="Trace"
+                    type="button"
+                    className="tab-rail-collapse"
+                    onClick={() => setIsTabRailCollapsed((prev) => !prev)}
+                    aria-label={isTabRailCollapsed ? 'Expand tabs' : 'Collapse tabs'}
                   >
                     <span className="material-symbols-outlined" aria-hidden>
-                      timeline
+                      {isTabRailCollapsed ? 'chevron_right' : 'chevron_left'}
                     </span>
-                    <span className="tab-label">Trace</span>
-                  </button>
-                  <button
-                    className={`tab-button ${activeTab === 2 ? 'active' : ''}`}
-                    onClick={() => handleTabChange(2)}
-                    aria-label="Events"
-                  >
-                    <span className="material-symbols-outlined" aria-hidden>
-                      event_note
-                    </span>
-                    <span className="tab-label">Events</span>
-                  </button>
-                  <button
-                    className={`tab-button ${activeTab === 3 ? 'active' : ''}`}
-                    onClick={() => handleTabChange(3)}
-                    aria-label="State"
-                  >
-                    <span className="material-symbols-outlined" aria-hidden>
-                      data_object
-                    </span>
-                    <span className="tab-label">State</span>
-                  </button>
-                  <button
-                    className={`tab-button ${activeTab === 4 ? 'active' : ''}`}
-                    onClick={() => handleTabChange(4)}
-                    aria-label="Artifacts"
-                  >
-                    <span className="material-symbols-outlined" aria-hidden>
-                      inventory_2
-                    </span>
-                    <span className="tab-label">Artifacts</span>
                   </button>
                 </div>
 

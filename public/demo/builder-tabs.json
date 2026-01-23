@@ -1,0 +1,15 @@
+{
+  "activeTab": "overview",
+  "tabs": [
+    { "id": "overview", "label": "Overview" },
+    { "id": "tools", "label": "Tools" },
+    { "id": "callbacks", "label": "Callbacks" },
+    { "id": "config", "label": "Config" }
+  ],
+  "panels": {
+    "overview": { "summary": "Demo agent builder overview." },
+    "tools": { "count": 2 },
+    "callbacks": { "count": 1 },
+    "config": { "agentClass": "LlmAgent" }
+  }
+}

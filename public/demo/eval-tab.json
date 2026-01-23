@@ -1,0 +1,4 @@
+{
+  "filters": ["passing", "failing", "needs-review"],
+  "defaultFilter": "passing"
+}

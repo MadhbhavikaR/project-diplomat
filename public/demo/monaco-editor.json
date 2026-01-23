@@ -1,0 +1,4 @@
+{
+  "defaultLanguage": "typescript",
+  "sampleContent": "export const hello = () => console.log('demo');\n"
+}

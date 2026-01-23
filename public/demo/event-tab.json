@@ -1,0 +1,4 @@
+{
+  "filters": ["info", "warning", "error"],
+  "defaultFilter": "info"
+}

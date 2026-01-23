@@ -1,0 +1,10 @@
+{
+  "content": {
+    "role": "model",
+    "parts": [
+      {
+        "text": "Here is a demo response chunk. I can walk through the changes or answer questions about the UI."
+      }
+    ]
+  }
+}

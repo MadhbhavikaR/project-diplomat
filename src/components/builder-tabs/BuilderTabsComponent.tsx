@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { AgentNode, ToolNode, CallbackNode } from '../../types/agentBuilder';
 import { getToolIcon } from '../../constants/tool-icons';
 import AddToolDialogComponent from '../add-tool-dialog/AddToolDialogComponent';
@@ -11,6 +11,10 @@ export const BuilderTabsComponent: React.FC = () => {
   const [showToolTypeMenu, setShowToolTypeMenu] = useState(false);
   const [toolDialogType, setToolDialogType] = useState<string>('Built-in tool');
   const [isToolDialogOpen, setIsToolDialogOpen] = useState(false);
+  const tabRailRef = useRef<HTMLDivElement | null>(null);
+  const [canScrollTabRailUp, setCanScrollTabRailUp] = useState(false);
+  const [canScrollTabRailDown, setCanScrollTabRailDown] = useState(false);
+  const [isTabRailCollapsed, setIsTabRailCollapsed] = useState(false);
 
   const agentConfig = useStore(state => state.agentConfig);
   const setAgentConfig = useStore(state => state.setAgentConfig);
@@ -64,6 +68,32 @@ export const BuilderTabsComponent: React.FC = () => {
     'VertexAiRagRetrieval',
     'VertexAiSearchTool',
   ];
+
+  const updateTabRailScroll = () => {
+    const rail = tabRailRef.current;
+    if (!rail) return;
+    setCanScrollTabRailUp(rail.scrollTop > 0);
+    setCanScrollTabRailDown(rail.scrollTop + rail.clientHeight < rail.scrollHeight - 1);
+  };
+
+  const scrollTabRailBy = (delta: number) => {
+    const rail = tabRailRef.current;
+    if (!rail) return;
+    rail.scrollBy({ top: delta, behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    updateTabRailScroll();
+    const rail = tabRailRef.current;
+    if (!rail) return;
+    const handleScroll = () => updateTabRailScroll();
+    rail.addEventListener('scroll', handleScroll);
+    window.addEventListener('resize', handleScroll);
+    return () => {
+      rail.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [selectedTabIndex, agentConfig.agent_class]);
 
   // Tab indices
   const CALLBACKS_TAB_INDEX = 3;
@@ -263,7 +293,57 @@ export const BuilderTabsComponent: React.FC = () => {
           </div>
         );
       case 1:
-        return null; // Sub-agents tab (handled separately)
+        return (
+          <div className="builder-panel-wrapper">
+            <div className="panel-title">
+              <div>Sub Agents</div>
+              <div>
+                <button
+                  className="panel-action-button"
+                  onClick={() => {
+                    const menu = document.createElement('div');
+                    menu.className = 'sub-agent-menu';
+                    menu.innerHTML = `
+                      <div>
+                        <button onClick="addSubAgentWithType('LlmAgent')">LLM Agent</button>
+                        <button onClick="addSubAgentWithType('SequentialAgent')">Sequential Agent</button>
+                        <button onClick="addSubAgentWithType('LoopAgent')">Loop Agent</button>
+                        <button onClick="addSubAgentWithType('ParallelAgent')">Parallel Agent</button>
+                      </div>
+                    `;
+                    document.body.appendChild(menu);
+                  }}
+                >
+                  <span className="material-symbols-outlined" aria-hidden>
+                    add
+                  </span>
+                </button>
+              </div>
+            </div>
+            <div className="tools-chips-container">
+              {agentConfig.sub_agents && agentConfig.sub_agents.length > 0 ? (
+                <div className="tools-list">
+                  {agentConfig.sub_agents.map(subAgent => (
+                    <div key={subAgent.name} className="tool-chip">
+                      <span className="tool-icon material-symbols-outlined">{getToolIcon(subAgent)}</span>
+                      <span className="tool-chip-name">{subAgent.name}</span>
+                      <button
+                        className="tool-remove"
+                        onClick={() => deleteSubAgent(subAgent.name)}
+                      >
+                        <span className="material-symbols-outlined" aria-hidden>
+                          close
+                        </span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="no-tools-message">No sub agents added yet</div>
+              )}
+            </div>
+          </div>
+        );
       case 2:
         return (
           <div className="builder-panel-wrapper">
@@ -274,7 +354,9 @@ export const BuilderTabsComponent: React.FC = () => {
                   className="panel-action-button"
                   onClick={() => setShowToolTypeMenu((prev) => !prev)}
                 >
-                  <span>add</span>
+                  <span className="material-symbols-outlined" aria-hidden>
+                    add
+                  </span>
                 </button>
               </div>
             </div>
@@ -302,7 +384,9 @@ export const BuilderTabsComponent: React.FC = () => {
                         className="tool-remove"
                         onClick={() => deleteTool(tool.name)}
                       >
-                        <span>cancel</span>
+                        <span className="material-symbols-outlined" aria-hidden>
+                          close
+                        </span>
                       </button>
                     </div>
                   ))}
@@ -342,7 +426,9 @@ export const BuilderTabsComponent: React.FC = () => {
                     document.body.appendChild(menu);
                   }}
                 >
-                  <span>add</span>
+                  <span className="material-symbols-outlined" aria-hidden>
+                    add
+                  </span>
                 </button>
               </div>
             </div>
@@ -361,7 +447,9 @@ export const BuilderTabsComponent: React.FC = () => {
                         className="callback-remove"
                         onClick={() => deleteCallback(callback.name)}
                       >
-                        <span>remove</span>
+                        <span className="material-symbols-outlined" aria-hidden>
+                          delete
+                        </span>
                       </button>
                     </div>
                   ))}
@@ -382,44 +470,78 @@ export const BuilderTabsComponent: React.FC = () => {
       <div className="builder-tab-content">
         {/* Tab Navigation */}
         <div className="builder-tab-layout">
-          <div className="builder-tab-rail" role="tablist" aria-orientation="vertical">
+          <div className={`builder-tab-rail ${isTabRailCollapsed ? 'collapsed' : ''}`} role="tablist" aria-orientation="vertical">
             <button
-              className={`tab-button ${selectedTabIndex === 0 ? 'active' : ''}`}
-              onClick={() => setSelectedTabIndex(0)}
+              type="button"
+              className="builder-tab-rail-scroll"
+              onClick={() => scrollTabRailBy(-80)}
+              disabled={!canScrollTabRailUp}
+              aria-label="Scroll tabs up"
             >
               <span className="material-symbols-outlined" aria-hidden>
-                tune
+                expand_less
               </span>
-              <span className="tab-label">Configuration</span>
             </button>
-            <button
-              className={`tab-button ${selectedTabIndex === 1 ? 'active' : ''}`}
-              onClick={() => setSelectedTabIndex(1)}
-            >
-              <span className="material-symbols-outlined" aria-hidden>
-                group_work
-              </span>
-              <span className="tab-label">Sub Agents</span>
-            </button>
-            {agentConfig.agent_class === 'LlmAgent' && (
+            <div className="builder-tab-rail-scroll-area" ref={tabRailRef}>
               <button
-                className={`tab-button ${selectedTabIndex === 2 ? 'active' : ''}`}
-                onClick={() => setSelectedTabIndex(2)}
+                className={`tab-button ${selectedTabIndex === 0 ? 'active' : ''}`}
+                onClick={() => setSelectedTabIndex(0)}
               >
                 <span className="material-symbols-outlined" aria-hidden>
-                  build
+                  tune
                 </span>
-                <span className="tab-label">Tools</span>
+                <span className="tab-label">Configuration</span>
               </button>
-            )}
+              <button
+                className={`tab-button ${selectedTabIndex === 1 ? 'active' : ''}`}
+                onClick={() => setSelectedTabIndex(1)}
+              >
+                <span className="material-symbols-outlined" aria-hidden>
+                  group_work
+                </span>
+                <span className="tab-label">Sub Agents</span>
+              </button>
+              {agentConfig.agent_class === 'LlmAgent' && (
+                <button
+                  className={`tab-button ${selectedTabIndex === 2 ? 'active' : ''}`}
+                  onClick={() => setSelectedTabIndex(2)}
+                >
+                  <span className="material-symbols-outlined" aria-hidden>
+                    build
+                  </span>
+                  <span className="tab-label">Tools</span>
+                </button>
+              )}
+              <button
+                className={`tab-button ${selectedTabIndex === 3 ? 'active' : ''}`}
+                onClick={() => setSelectedTabIndex(3)}
+              >
+                <span className="material-symbols-outlined" aria-hidden>
+                  bolt
+                </span>
+                <span className="tab-label">Callbacks</span>
+              </button>
+            </div>
             <button
-              className={`tab-button ${selectedTabIndex === 3 ? 'active' : ''}`}
-              onClick={() => setSelectedTabIndex(3)}
+              type="button"
+              className="builder-tab-rail-scroll"
+              onClick={() => scrollTabRailBy(80)}
+              disabled={!canScrollTabRailDown}
+              aria-label="Scroll tabs down"
             >
               <span className="material-symbols-outlined" aria-hidden>
-                bolt
+                expand_more
               </span>
-              <span className="tab-label">Callbacks</span>
+            </button>
+            <button
+              type="button"
+              className="builder-tab-rail-collapse"
+              onClick={() => setIsTabRailCollapsed((prev) => !prev)}
+              aria-label={isTabRailCollapsed ? 'Expand tabs' : 'Collapse tabs'}
+            >
+              <span className="material-symbols-outlined" aria-hidden>
+                {isTabRailCollapsed ? 'chevron_right' : 'chevron_left'}
+              </span>
             </button>
           </div>
           <div className="builder-tab-body">
@@ -429,252 +551,8 @@ export const BuilderTabsComponent: React.FC = () => {
           </div>
         </div>
             <div className="content-wrapper">
-          <div className="builder-panel-wrapper">
-            <div className="panel-title">Configuration</div>
-            <div>
-              <div className="config-form">
-                <div className="form-row">
-                  <div className="agent-name-field">
-                    <label>Agent Name</label>
-                    <input
-                      type="text"
-                      value={agentConfig.name}
-                      disabled={agentConfig.isRoot}
-                      onChange={(e) => handleAgentConfigChange('name', e.target.value)}
-                    />
-                  </div>
-                  <div className="agent-type-field">
-                    <label>Agent Type</label>
-                    <select
-                      value={agentConfig.agent_class}
-                      disabled
-                      onChange={(e) => handleAgentConfigChange('agent_class', e.target.value)}
-                    >
-                      {agentTypes.map(type => (
-                        <option key={type} value={type}>{type}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {agentConfig.agent_class === 'LlmAgent' && (
-                  <div className="form-field">
-                    <label>Model</label>
-                    <select
-                      value={agentConfig.model}
-                      onChange={(e) => handleAgentConfigChange('model', e.target.value)}
-                    >
-                      {models.map(model => (
-                        <option key={model} value={model}>{model}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {agentConfig.agent_class === 'LlmAgent' && (
-                  <div className="form-field">
-                    <label>Instructions</label>
-                    <textarea
-                      rows={5}
-                      value={agentConfig.instruction}
-                      onChange={(e) => handleAgentConfigChange('instruction', e.target.value)}
-                    ></textarea>
-                  </div>
-                )}
-
-                {agentConfig.agent_class === 'LlmAgent' && (
-                  <div className="form-field">
-                    <label>Description (optional)</label>
-                    <textarea
-                      rows={3}
-                      value={agentConfig.description || ''}
-                      onChange={(e) => handleAgentConfigChange('description', e.target.value)}
-                    ></textarea>
-                  </div>
-                )}
-
-                {agentConfig.agent_class === 'LoopAgent' && (
-                  <div className="form-field">
-                    <label>Max Iteration</label>
-                    <input
-                      type="number"
-                      value={agentConfig.max_iterations || ''}
-                      min={1}
-                      onChange={(e) => handleAgentConfigChange('max_iterations', parseInt(e.target.value) || 0)}
-                    />
-                  </div>
-                )}
-
-                {agentConfig.isAgentTool && (
-                  <div className="form-field">
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={agentConfig.skip_summarization || false}
-                        onChange={(e) => handleAgentConfigChange('skip_summarization', e.target.checked)}
-                      />
-                      Skip summarization
-                    </label>
-                  </div>
-                )}
-              </div>
+              {renderTabContent()}
             </div>
-          </div>
-
-          {agentConfig.agent_class === 'LlmAgent' && (
-            <div className="builder-panel-wrapper">
-              <div className="panel-title">
-                <div>Tools</div>
-                <div>
-                  <button 
-                    className="panel-action-button"
-                    onClick={() => setShowToolTypeMenu((prev) => !prev)}
-                  >
-                    <span>add</span>
-                  </button>
-                </div>
-              </div>
-              {showToolTypeMenu && (
-                <div className="tool-type-menu">
-                  <button type="button" onClick={() => openToolDialog('Function tool')}>
-                    Function tool
-                  </button>
-                  <button type="button" onClick={() => openToolDialog('Built-in tool')}>
-                    Built-in tool
-                  </button>
-                  <button type="button" onClick={() => openToolDialog('Agent tool')}>
-                    Agent tool
-                  </button>
-                </div>
-              )}
-              <div className="tools-chips-container">
-                {agentConfig.tools && agentConfig.tools.length > 0 ? (
-                  <div className="tools-list">
-                    {agentConfig.tools.map(tool => (
-                      <div key={tool.name} className="tool-chip">
-                        <span className="tool-icon material-symbols-outlined">{getToolIcon(tool)}</span>
-                        <span className="tool-chip-name">{tool.name}</span>
-                        <button 
-                          className="tool-remove"
-                          onClick={() => deleteTool(tool.name)}
-                        >
-                          <span>cancel</span>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="no-tools-message">No tools added yet</div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {selectedTabIndex === 1 && (
-            <div className="builder-panel-wrapper">
-              <div className="panel-title">
-                <div>Sub Agents</div>
-                <div>
-                  <button 
-                    className="panel-action-button"
-                    onClick={() => {
-                      const menu = document.createElement('div');
-                      menu.className = 'sub-agent-menu';
-                      menu.innerHTML = `
-                        <div>
-                          <button onClick="addSubAgentWithType('LlmAgent')">LLM Agent</button>
-                          <button onClick="addSubAgentWithType('SequentialAgent')">Sequential Agent</button>
-                          <button onClick="addSubAgentWithType('LoopAgent')">Loop Agent</button>
-                          <button onClick="addSubAgentWithType('ParallelAgent')">Parallel Agent</button>
-                        </div>
-                      `;
-                      document.body.appendChild(menu);
-                    }}
-                  >
-                    <span>add</span>
-                  </button>
-                </div>
-              </div>
-              <div className="tools-chips-container">
-                {agentConfig.sub_agents && agentConfig.sub_agents.length > 0 ? (
-                  <div className="tools-list">
-                    {agentConfig.sub_agents.map(subAgent => (
-                      <div key={subAgent.name} className="tool-chip">
-                        <span className="tool-icon material-symbols-outlined">{getToolIcon(subAgent)}</span>
-                        <span className="tool-chip-name">{subAgent.name}</span>
-                        <button 
-                          className="tool-remove"
-                          onClick={() => deleteSubAgent(subAgent.name)}
-                        >
-                          <span>cancel</span>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="no-tools-message">No sub agents added yet</div>
-                )}
-              </div>
-            </div>
-          )}
-
-          <div className="builder-panel-wrapper">
-            <div className="panel-title">
-              <div>Callbacks</div>
-              <div>
-                <button 
-                  className="panel-action-button"
-                  onClick={() => {
-                    const menu = document.createElement('div');
-                    menu.className = 'callbacks-menu';
-                    menu.innerHTML = `
-                      <div>
-                        <div className="menu-header">Agent Lifecycle</div>
-                        <button onClick="addCallback('before_agent')">Before Agent</button>
-                        <button onClick="addCallback('after_agent')">After Agent</button>
-                        ${agentConfig.agent_class === 'LlmAgent' ? `
-                          <div className="menu-header">Model (LLM) Interaction</div>
-                          <button onClick="addCallback('before_model')">Before Model</button>
-                          <button onClick="addCallback('after_model')">After Model</button>
-                          <div className="menu-header">Tool Execution</div>
-                          <button onClick="addCallback('before_tool')">Before Tool</button>
-                          <button onClick="addCallback('after_tool')">After Tool</button>
-                        ` : ''}
-                      </div>
-                    `;
-                    document.body.appendChild(menu);
-                  }}
-                >
-                  <span>add</span>
-                </button>
-              </div>
-            </div>
-            <div className="tools-chips-container callbacks-list">
-              {agentConfig.callbacks && agentConfig.callbacks.length > 0 ? (
-                <div className="callbacks-list">
-                  {agentConfig.callbacks.map(callback => (
-                    <div key={callback.name} className="callback-row">
-                      <div className="callback-chip">
-                        <span className="chip-content">
-                          <span className="chip-type">{callback.type}</span>
-                          <span className="chip-name">{callback.name}</span>
-                        </span>
-                      </div>
-                      <button 
-                        className="callback-remove"
-                        onClick={() => deleteCallback(callback.name)}
-                      >
-                        <span>remove</span>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="no-tools-message">No callbacks added yet</div>
-              )}
-            </div>
-          </div>
-        </div>
             <div className="action-buttons">
               <button className="save-button" onClick={saveChanges}>Save</button>
               <button className="cancel-button" onClick={cancelChanges}>Cancel</button>

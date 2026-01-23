@@ -89,9 +89,31 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 10px 8px;
   background-color: #f8fafc;
+  overflow: hidden;
+  padding: 6px;
+}
+
+.assistant-tab-scroll {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 4px 0;
+  color: #64748b;
+}
+
+.assistant-tab-scroll:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.assistant-tab-scroll-area {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   overflow-y: auto;
+  padding: 6px 0;
+  flex: 1;
 }
 
 .assistant-tab-button {
@@ -313,4 +335,24 @@
   .message-card {
     max-width: 85%;
   }
+}
+
+.assistant-tab-rail.collapsed {
+  width: 54px;
+}
+
+.assistant-tab-rail.collapsed .tab-label {
+  display: none;
+}
+
+.assistant-tab-rail.collapsed .assistant-tab-button {
+  justify-content: center;
+}
+
+.assistant-tab-collapse {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 4px 0;
+  color: #64748b;
 }

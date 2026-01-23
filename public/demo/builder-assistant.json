@@ -1,0 +1,8 @@
+{
+  "welcome": "Hello! I'm your Builder Assistant. Ask me to draft tools, callbacks, or agents.",
+  "suggestions": [
+    "Create a tool for web search",
+    "Add a pre-model callback",
+    "Draft an agent instruction"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "activePath": "/repo/demo/agent.json",
+  "openTabs": [
+    {
+      "path": "/repo/demo/agent.json",
+      "name": "agent.json",
+      "language": "json",
+      "isDirty": false
+    },
+    {
+      "path": "/repo/src/main.ts",
+      "name": "main.ts",
+      "language": "typescript",
+      "isDirty": true
+    }
+  ]
+}

@@ -8,12 +8,39 @@
   background-color: #f9f9f9;
 }
 
+.file-tabs-scroller {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.file-tabs-scroll {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 2px;
+  color: #64748b;
+}
+
+.file-tabs-scroll:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 .file-tabs-list {
   display: flex;
   align-items: center;
   gap: 8px;
   overflow-x: auto;
   flex: 1;
+  min-width: 0;
+  scrollbar-width: none;
+}
+
+.file-tabs-list::-webkit-scrollbar {
+  display: none;
 }
 
 .file-tabs-actions {

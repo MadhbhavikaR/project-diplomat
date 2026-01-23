@@ -164,10 +164,8 @@ See [DEFECTS.md](./DEFECTS.md) for detailed defect tracking.
 8. Artifact service implementation
 9. Markdown renderer + JSON editor components
 10. Filename regex validation for file creation (demo JSON + backend API)
-11. Tab bar overflow controls + stationary tabs with content-only scroll
-12. Configuration page tabs content wiring
-13. Demo-mode chat response stubs using ordered JSON files
-14. Research adk-web-main chat response pattern for demo stubs
+11. Configuration page tabs content wiring
+12. Assistant field references with apply-to-field action
 
 ## Quality Metrics
 
@@ -210,8 +208,10 @@ See [DEFECTS.md](./DEFECTS.md) for detailed defect tracking.
 - ✅ Resolved SessionTab render-time store update warning
 - 🎨 Applied Material Symbols icons and vertical pill tabs (left/right rails)
 - 🧪 Added demo-mode data loading for UI development
-- ⏳ Pending: right-side overlay rail polish, tab overflow controls, config tab wiring, and builder canvas tasks
-- ⏳ Pending: right-side overlay rail polish, tab overflow controls, config tab wiring, builder canvas tasks, and demo chat response stubs
+- 🧵 Added ordered demo chat response files and loader based on SSE LlmResponse shape
+- 🧮 Demo git changes count now updates on create/delete in demo mode
+- ↕️ Added tab overflow arrows and stationary tab rails (side panel, builder, assistant, editor)
+- ⏳ Pending: right-side overlay rail polish, config tab wiring, and builder canvas tasks
 
 ---
 

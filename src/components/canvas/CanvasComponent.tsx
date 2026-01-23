@@ -467,7 +467,7 @@ const CanvasComponent = () => {
             {nodes.map((node) => (
               <div
                 key={node.id}
-                className={`canvas-node ${node.type} ${selectedNodeId === node.id ? 'selected' : ''} ${connectingFrom === node.id ? 'connecting' : ''} ${connectingFrom && !canConnect(nodes.find((n) => n.id === connectingFrom)?.type || 'agent', node.type) ? 'disabled-connect' : ''}`}
+                className={`canvas-node ${node.type} ${selectedNodeId === node.id ? 'selected' : ''} ${connectingFrom ? 'connecting-active' : ''} ${connectingFrom === node.id ? 'connecting' : ''} ${connectingFrom && !canConnect(nodes.find((n) => n.id === connectingFrom)?.type || 'agent', node.type) ? 'disabled-connect' : ''}`}
                 style={{ left: node.x, top: node.y }}
                 onClick={() => handleNodeClick(node.id)}
                 onMouseDown={(event) => handleMouseDown(event, node.id)}
