@@ -1,0 +1,5 @@
+keep the tabs stattionary and only scroll the contetents, what i mean by tabs should be scrollable is that when there are more tabe show corresponding up andown arrow to the end of the tab bar similarly for horizontal tab bar left and right arrow. The tabs for configuration page are not working and not showing the corrsponding information, pls fix
+
+also add the same capability that we have for tools in the side bar to the tool icon click option on the canvas. if applicable add the same capability to call backs, the call backs can have pre callback, post call back, pre model, post model so ammend the canvas boxes and the sidebar accordingly. 
+
+on the editor file creation have a filter for allowed file names with specific regex pattern, this regex will come from the demo  folder during demo mode, howver it will come from the backend via api call during normal operation. decide on the structure of the api call and all other calls accordingly.accordingly which are not part of the original adk-web-main folder.

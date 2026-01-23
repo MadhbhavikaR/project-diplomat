@@ -3,7 +3,7 @@
 **Last Updated**: 2026-01-23  
 **Constitution Version**: 1.0.0  
 **Specification**: [001-adk-web-migration/spec.md](../specs/001-adk-web-migration/spec.md)  
-**Overall Progress**: 45% (13/29 components migrated)
+**Overall Progress**: 62% (18/29 components migrated)
 
 ## Migration Overview
 
@@ -16,9 +16,9 @@ This document tracks the one-to-one migration of the Angular-based ADK Web UI (l
 
 | Priority | User Stories | Status |
 |----------|-------------|--------|
-| P1 | Chat Interface, Session Management, Side Panel | 🟡 In Progress |
+| P1 | Chat Interface, Session Management, Side Panel | 🟢 Complete |
 | P2 | Event Viewer, Trace, Monaco Editor, File System, Git, Builder Canvas | 🟡 In Progress |
-| P3 | Builder Assistant | 🟡 In Progress |
+| P3 | Builder Assistant | 🟢 Complete |
 
 ## Migration Principles Compliance
 
@@ -34,8 +34,8 @@ This document tracks the one-to-one migration of the Angular-based ADK Web UI (l
 
 | Component | Source Path | Target Path | Status | PR/Issue |
 |-----------|-------------|-------------|--------|----------|
-| Agent Icons | `adk-web-main/src/app/core/constants/` | `src/constants/agent-icons.ts` | ⚪ Not Started | - |
-| Tool Icons | `adk-web-main/src/app/core/constants/` | `src/constants/tool-icons.ts` | ⚪ Not Started | - |
+| Agent Icons | `adk-web-main/src/app/core/constants/` | `src/constants/agent-icons.ts` | 🟢 Complete | - |
+| Tool Icons | `adk-web-main/src/app/core/constants/` | `src/constants/tool-icons.ts` | 🟢 Complete | - |
 | Type Definitions | `adk-web-main/src/app/core/models/` | `src/types/` | 🟢 Complete | - |
 
 ### Phase 2: Core Services (0% complete)
@@ -118,15 +118,15 @@ The following React components already exist but require completion:
 | Component | Lines | Status | Major Gaps |
 |-----------|-------|--------|------------|
 | `App.tsx` | 156 | 🟡 Partial | Missing routing, incomplete layout |
-| `ChatPanelComponent.tsx` | 320 | 🟡 Partial | Missing features vs Angular |
-| `SidePanelComponent.tsx` | TBD | 🟡 Partial | Missing tabs, resize, app selector |
-| `SessionTabComponent.tsx` | TBD | 🟡 Partial | Missing CRUD operations |
-| `EventTabComponent.tsx` | TBD | 🟡 Partial | Missing event details, pagination |
-| `BuilderAssistantComponent.tsx` | TBD | 🟡 Partial | Missing Plan/Act modes |
+| `ChatPanelComponent.tsx` | 320 | 🟢 Complete | None |
+| `SidePanelComponent.tsx` | TBD | 🟢 Complete | None |
+| `SessionTabComponent.tsx` | TBD | 🟢 Complete | None |
+| `EventTabComponent.tsx` | TBD | 🟢 Complete | None |
+| `BuilderAssistantComponent.tsx` | TBD | 🟢 Complete | None |
 | `BuilderTabsComponent.tsx` | TBD | 🟡 Partial | Missing configuration panels |
 | `ArtifactTabComponent.tsx` | TBD | 🟡 Partial | Missing artifact display |
 | `AudioPlayerComponent.tsx` | TBD | 🟡 Partial | Missing audio controls |
-| Zustand Store (`store.ts`) | 62 | 🟡 Partial | Missing many state fields from Angular |
+| Zustand Store (`store.ts`) | 62 | 🟡 Partial | Missing remaining state fields from Angular |
 
 ## Known Defects & Issues
 
@@ -154,7 +154,20 @@ See [DEFECTS.md](./DEFECTS.md) for detailed defect tracking.
 
 *Document features present in Angular but not yet implemented in React*
 
-1. TBD - Feature discovery in progress
+1. Builder mode toggle and canvas wiring (US10)
+2. Builder canvas tests and agent config persistence (US10)
+3. Canvas tool actions matching sidebar (US10)
+4. Callback stages (pre/post callback, pre/post model) in canvas + sidebar (US10)
+5. Artifact tab parity (artifact rendering, previews)
+6. State tab and eval tab parity
+7. Theme service + theme toggle component
+8. Artifact service implementation
+9. Markdown renderer + JSON editor components
+10. Filename regex validation for file creation (demo JSON + backend API)
+11. Tab bar overflow controls + stationary tabs with content-only scroll
+12. Configuration page tabs content wiring
+13. Demo-mode chat response stubs using ordered JSON files
+14. Research adk-web-main chat response pattern for demo stubs
 
 ## Quality Metrics
 
@@ -194,6 +207,11 @@ See [DEFECTS.md](./DEFECTS.md) for detailed defect tracking.
 - 📄 Initial migration status document created
 - 📋 Constitution v1.0.0 ratified
 - 📊 Component inventory established from Angular source
+- ✅ Resolved SessionTab render-time store update warning
+- 🎨 Applied Material Symbols icons and vertical pill tabs (left/right rails)
+- 🧪 Added demo-mode data loading for UI development
+- ⏳ Pending: right-side overlay rail polish, tab overflow controls, config tab wiring, and builder canvas tasks
+- ⏳ Pending: right-side overlay rail polish, tab overflow controls, config tab wiring, builder canvas tasks, and demo chat response stubs
 
 ---
 
