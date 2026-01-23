@@ -1,7 +1,7 @@
 # Migration Status: Angular to React
 
-**Last Updated**: 2026-01-23  
-**Constitution Version**: 1.0.0  
+**Last Updated**: 2026-01-24  
+**Constitution Version**: 1.0.1  
 **Specification**: [001-adk-web-migration/spec.md](../specs/001-adk-web-migration/spec.md)  
 **Overall Progress**: 62% (18/29 components migrated)
 
@@ -135,7 +135,7 @@ See [DEFECTS.md](./DEFECTS.md) for detailed defect tracking.
 ### Summary
 - **Critical**: 0
 - **High**: 0
-- **Medium**: 0
+- **Medium**: 1
 - **Low**: 0
 
 ### Critical Defects (Blocking)
@@ -145,7 +145,7 @@ See [DEFECTS.md](./DEFECTS.md) for detailed defect tracking.
 *No high priority defects tracked yet*
 
 ### Medium Priority Defects
-*No medium priority defects tracked yet*
+- DEF-001: Per-agent builder configuration sync (tabs + canvas reset) [DEFECTS.md](./DEFECTS.md)
 
 ### Low Priority Defects
 *No low priority defects tracked yet*
@@ -166,6 +166,7 @@ See [DEFECTS.md](./DEFECTS.md) for detailed defect tracking.
 10. Filename regex validation for file creation (demo JSON + backend API)
 11. Configuration page tabs content wiring
 12. Assistant field references with apply-to-field action
+13. Per-agent builder configuration sync (tabs + canvas reset)
 
 ## Quality Metrics
 
@@ -212,6 +213,12 @@ See [DEFECTS.md](./DEFECTS.md) for detailed defect tracking.
 - 🧮 Demo git changes count now updates on create/delete in demo mode
 - ↕️ Added tab overflow arrows and stationary tab rails (side panel, builder, assistant, editor)
 - ⏳ Pending: right-side overlay rail polish, config tab wiring, and builder canvas tasks
+- 🐞 Logged defect DEF-001 for per-agent builder config sync
+
+### 2026-01-24
+- 📄 Updated constitution with known issues/deviations tracking
+- 📋 Added missing requirement coverage tasks (session persistence, deep-linking, chat→event navigation, autosave, git sync status, embeddable/no-branding, responsive, async loading/error states)
+- 🧪 Added per-component visual regression tasks
 
 ---
 

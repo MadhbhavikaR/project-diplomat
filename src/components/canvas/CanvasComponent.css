@@ -42,6 +42,112 @@
   flex-wrap: wrap;
 }
 
+.canvas-toolbar-tool {
+  position: relative;
+  display: inline-flex;
+}
+
+.canvas-toolbar-callback {
+  position: relative;
+  display: inline-flex;
+}
+
+.canvas-tooltype-menu {
+  position: absolute;
+  top: 36px;
+  left: 0;
+  min-width: 220px;
+  background-color: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+  padding: 6px;
+  z-index: 10;
+}
+
+.canvas-tooltype-option {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.canvas-tooltype-option:hover {
+  background-color: rgba(25, 118, 210, 0.08);
+}
+
+.canvas-tooltype-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1f2933;
+}
+
+.canvas-tooltype-help {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.canvas-callback-menu {
+  position: absolute;
+  top: 36px;
+  left: 0;
+  min-width: 240px;
+  background-color: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+  padding: 8px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.canvas-callback-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.canvas-callback-row label {
+  font-size: 11px;
+  color: #475569;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.canvas-callback-row select {
+  padding: 6px 8px;
+  border: 1px solid #cbd5f5;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.canvas-callback-preview {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1f2933;
+}
+
+.canvas-callback-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #1976d2;
+  background-color: #1976d2;
+  color: #ffffff;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
 .canvas-toolbar-edit {
   display: flex;
   align-items: center;
@@ -199,6 +305,11 @@
   letter-spacing: 0.4px;
 }
 
+.canvas-node-subtype {
+  font-size: 11px;
+  color: #475569;
+}
+
 .canvas-node-actions {
   display: none;
   gap: 6px;
@@ -354,6 +465,10 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.canvas-inspector.assistant-open {
+  right: 380px;
 }
 
 .canvas-inspector-title {

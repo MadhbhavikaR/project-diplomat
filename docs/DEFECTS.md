@@ -1,7 +1,7 @@
 # Defects Registry: ADK Web Migration
 
-**Last Updated**: 2026-01-23  
-**Constitution Version**: 1.0.0  
+**Last Updated**: 2026-01-24  
+**Constitution Version**: 1.0.1  
 **Related Specification**: [spec.md](../specs/001-adk-web-migration/spec.md)
 
 ## Defect Tracking Guidelines
@@ -19,9 +19,9 @@ Per Constitution Principle III (Defect Tracking & Quality Gates):
 |----------|------|--------|-------|
 | Critical | 0    | 0      | 0     |
 | High     | 0    | 0      | 0     |
-| Medium   | 0    | 0      | 0     |
+| Medium   | 1    | 0      | 1     |
 | Low      | 0    | 0      | 0     |
-| **Total** | **0** | **0** | **0** |
+| **Total** | **1** | **0** | **1** |
 
 ---
 
@@ -45,7 +45,37 @@ Per Constitution Principle III (Defect Tracking & Quality Gates):
 
 *Medium priority defects affect secondary features or edge cases. May be deferred to patch release.*
 
-*No medium priority defects tracked yet.*
+### DEF-001: Agent selection does not load per-agent builder configuration
+
+**Severity**: Medium  
+**Status**: Open  
+**Component**: Builder mode (side panel, canvas, config tabs)  
+**Angular Reference**: `adk-web-main/src/app/components/builder-tabs/` + `adk-web-main/src/app/components/canvas/`  
+**Discovered**: 2026-01-24  
+**Assigned**: Unassigned
+
+**Description**:
+Selecting an agent (from the app selector, canvas, or breadcrumbs) and entering builder mode does not reset the canvas/config/tabs to that agent’s configuration. In the Angular reference, agent clicks call `setSelectedNode(...)` and the builder view updates per-agent state (including tools, callbacks, and nested sub-agents/agent tools). The React implementation keeps shared/global state, so agents with internal callbacks/tools or multiple sub-agents do not load their specific configuration when selected.
+
+**Steps to Reproduce**:
+1. Select an agent with tools/callbacks or sub-agents in the app selector
+2. Click edit to enter builder mode
+3. Click another agent node on the canvas (or breadcrumb)
+4. Observe canvas and config tabs
+
+**Expected Behavior**:
+Builder mode loads the selected agent’s configuration; tabs and canvas reset to that agent’s data, including internal tools, callbacks, and sub-agent/agent-tool composition.
+
+**Actual Behavior**:
+Builder mode shows stale/global data and does not switch per agent.
+
+**Root Cause** (if known):
+Builder state is not keyed by selected agent; canvas and config use shared state and do not rehydrate per-agent tools/callbacks or nested agent contexts.
+
+**Resolution**:
+Pending
+
+**Related PR/Issue**: TBD
 
 ---
 

@@ -13,6 +13,7 @@ export interface UiSlice {
   isTraceEnabled: boolean
   isSessionFilteringEnabled: boolean
   isSessionListLoading: boolean
+  isAssistantOpen: boolean
   assistantMode: 'plan' | 'act'
   currentSession: unknown | null
   selectedEvent: unknown | null
@@ -31,6 +32,7 @@ export interface UiSlice {
   setUiState: (state: Record<string, unknown>) => void
   setSessionFilteringEnabled: (enabled: boolean) => void
   setSessionListLoading: (loading: boolean) => void
+  setAssistantOpen: (open: boolean) => void
   setAssistantMode: (mode: 'plan' | 'act') => void
 }
 
@@ -47,6 +49,7 @@ export const createUiSlice: StateCreator<UiSlice, [], [], UiSlice> = (set) => ({
   isTraceEnabled: true,
   isSessionFilteringEnabled: true,
   isSessionListLoading: false,
+  isAssistantOpen: false,
   assistantMode: 'plan',
   currentSession: null,
   selectedEvent: null,
@@ -65,5 +68,6 @@ export const createUiSlice: StateCreator<UiSlice, [], [], UiSlice> = (set) => ({
   setUiState: (state) => set({ uiState: state }),
   setSessionFilteringEnabled: (enabled) => set({ isSessionFilteringEnabled: enabled }),
   setSessionListLoading: (loading) => set({ isSessionListLoading: loading }),
+  setAssistantOpen: (open) => set({ isAssistantOpen: open }),
   setAssistantMode: (mode) => set({ assistantMode: mode }),
 })

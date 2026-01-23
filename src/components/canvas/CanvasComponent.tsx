@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import './CanvasComponent.css'
 import { useStore } from '../../store/store'
 
@@ -6,6 +6,7 @@ interface CanvasNode {
   id: string
   label: string
   type: 'agent' | 'tool' | 'callback'
+  subtype?: string
   x: number
   y: number
   description: string
@@ -31,6 +32,10 @@ const CanvasComponent = () => {
   const [pan, setPan] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
   const [isPanning, setIsPanning] = useState(false)
+  const [showToolTypeMenu, setShowToolTypeMenu] = useState(false)
+  const [showCallbackMenu, setShowCallbackMenu] = useState(false)
+  const [callbackPhase, setCallbackPhase] = useState<'before' | 'after'>('before')
+  const [callbackScope, setCallbackScope] = useState<'agent' | 'model'>('agent')
   const panRef = useRef<{ startX: number; startY: number; originX: number; originY: number } | null>(null)
 
   const addToolToConfig = useStore(state => state.addTool)
@@ -42,6 +47,9 @@ const CanvasComponent = () => {
   const renameToolInConfig = useStore(state => state.renameTool)
   const renameCallbackInConfig = useStore(state => state.renameCallback)
   const renameSubAgentInConfig = useStore(state => state.renameSubAgent)
+  const selectedBuilderItem = useStore(state => state.selectedBuilderItem)
+  const setSelectedBuilderItem = useStore(state => state.setSelectedBuilderItem)
+  const isAssistantOpen = useStore(state => state.isAssistantOpen)
   const dragRef = useRef<{ id: string; offsetX: number; offsetY: number } | null>(null)
   const surfaceRef = useRef<HTMLDivElement>(null)
 
@@ -49,27 +57,44 @@ const CanvasComponent = () => {
   const NODE_HEIGHT = 84
   const GRID_SIZE = 16
 
-  const addNode = (type: CanvasNode['type']) => {
+  const toolTypeOptions = [
+    {
+      label: 'Function tool',
+      description: 'Custom function tool with JSON schema inputs.',
+    },
+    {
+      label: 'Built-in tool',
+      description: 'Prebuilt tool provided by the platform.',
+    },
+    {
+      label: 'Agent tool',
+      description: 'Wrap another agent as a callable tool.',
+    },
+  ]
+
+  const addNode = (type: CanvasNode['type'], subtype?: string, description?: string) => {
     const nextIndex = nodes.length + 1
     const id = `node-${nextIndex}`
-    const label = `${type === 'agent' ? 'Agent' : type === 'tool' ? 'Tool' : 'Callback'} ${nextIndex}`
+    const labelBase = type === 'agent' ? 'Agent' : type === 'tool' ? 'Tool' : 'Callback'
+    const label = subtype ? `${subtype} ${nextIndex}` : `${labelBase} ${nextIndex}`
     setNodes((prev) => [
       ...prev,
       {
         id,
         label,
         type,
+        subtype,
         x: 40 + prev.length * 20,
         y: 40 + prev.length * 20,
-        description: '',
+        description: description || '',
       },
     ])
 
     if (type === 'tool') {
-      addToolToConfig({ toolType: 'Built-in tool', name: label })
+      addToolToConfig({ toolType: subtype || 'Built-in tool', name: label })
     }
     if (type === 'callback') {
-      addCallbackToConfig({ type: 'before_agent', name: label })
+      addCallbackToConfig({ type: subtype || 'before_agent', name: label })
     }
     if (type === 'agent') {
       addSubAgentToConfig('LlmAgent', label)
@@ -78,6 +103,10 @@ const CanvasComponent = () => {
 
   const handleNodeClick = (nodeId: string) => {
     setSelectedNodeId(nodeId)
+    const node = nodes.find((item) => item.id === nodeId)
+    if (node) {
+      setSelectedBuilderItem({ type: node.type, name: node.label })
+    }
     if (connectingFrom && connectingFrom !== nodeId) {
       connectNodes(connectingFrom, nodeId)
     }
@@ -173,6 +202,7 @@ const CanvasComponent = () => {
     setEdges((prev) => prev.filter((edge) => edge.from !== selectedNodeId && edge.to !== selectedNodeId))
     setSelectedNodeId(null)
     setConnectingFrom(null)
+    setSelectedBuilderItem(null)
 
     if (node) {
       if (node.type === 'tool') {
@@ -302,10 +332,33 @@ const CanvasComponent = () => {
     dragRef.current = null
   }
 
+  const handleSelectToolType = (option: { label: string; description: string }) => {
+    addNode('tool', option.label, option.description)
+    setShowToolTypeMenu(false)
+  }
+
+  const callbackSubtype = `${callbackPhase}_${callbackScope}`
+  const callbackDescription = `${callbackPhase === 'before' ? 'Before' : 'After'} ${callbackScope === 'agent' ? 'Agent' : 'Model'} callback.`
+
+  const handleAddCallback = () => {
+    addNode('callback', callbackSubtype, callbackDescription)
+    setShowCallbackMenu(false)
+  }
+
   const selectedNode = useMemo(
     () => nodes.find((node) => node.id === selectedNodeId) || null,
     [nodes, selectedNodeId]
   )
+
+  useEffect(() => {
+    if (!selectedBuilderItem) return
+    const match = nodes.find(
+      (node) => node.type === selectedBuilderItem.type && node.label === selectedBuilderItem.name
+    )
+    if (match && match.id !== selectedNodeId) {
+      setSelectedNodeId(match.id)
+    }
+  }, [nodes, selectedBuilderItem, selectedNodeId])
 
   const selectedNodeConnections = useMemo(() => {
     if (!selectedNodeId) {
@@ -384,14 +437,84 @@ const CanvasComponent = () => {
             <span className="material-symbols-outlined">smart_toy</span>
             <span className="sr-only">Add Agent</span>
           </button>
-          <button type="button" className="icon-button icon-only" onClick={() => addNode('tool')} aria-label="Add tool node" title="Add Tool">
-            <span className="material-symbols-outlined">build</span>
-            <span className="sr-only">Add Tool</span>
-          </button>
-          <button type="button" className="icon-button icon-only" onClick={() => addNode('callback')} aria-label="Add callback node" title="Add Callback">
-            <span className="material-symbols-outlined">bolt</span>
-            <span className="sr-only">Add Callback</span>
-          </button>
+          <div className="canvas-toolbar-tool">
+            <button
+              type="button"
+              className="icon-button icon-only"
+              onClick={() => setShowToolTypeMenu((prev) => !prev)}
+              aria-label="Add tool node"
+              title="Add Tool"
+            >
+              <span className="material-symbols-outlined">build</span>
+              <span className="sr-only">Add Tool</span>
+            </button>
+            {showToolTypeMenu && (
+              <div className="canvas-tooltype-menu" role="menu">
+                {toolTypeOptions.map((option) => (
+                  <button
+                    key={option.label}
+                    type="button"
+                    className="canvas-tooltype-option"
+                    onClick={() => handleSelectToolType(option)}
+                  >
+                    <div className="canvas-tooltype-title">{option.label}</div>
+                    <div className="canvas-tooltype-help">{option.description}</div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="canvas-toolbar-callback">
+            <button
+              type="button"
+              className="icon-button icon-only"
+              onClick={() => setShowCallbackMenu((prev) => !prev)}
+              aria-label="Add callback node"
+              title="Add Callback"
+            >
+              <span className="material-symbols-outlined">bolt</span>
+              <span className="sr-only">Add Callback</span>
+            </button>
+            {showCallbackMenu && (
+              <div className="canvas-callback-menu" role="menu">
+                <div className="canvas-callback-row">
+                  <label>
+                    Phase
+                    <select
+                      value={callbackPhase}
+                      onChange={(event) => setCallbackPhase(event.target.value as 'before' | 'after')}
+                    >
+                      <option value="before">Before</option>
+                      <option value="after">After</option>
+                    </select>
+                  </label>
+                  <label>
+                    Scope
+                    <select
+                      value={callbackScope}
+                      onChange={(event) => setCallbackScope(event.target.value as 'agent' | 'model')}
+                    >
+                      <option value="agent">Agent</option>
+                      <option value="model">Model</option>
+                    </select>
+                  </label>
+                </div>
+                <div className="canvas-callback-preview">
+                  {callbackPhase === 'before' ? 'Before' : 'After'} {callbackScope === 'agent' ? 'Agent' : 'Model'} Callback
+                </div>
+                <button
+                  type="button"
+                  className="canvas-callback-add"
+                  onClick={handleAddCallback}
+                >
+                  <span className="material-symbols-outlined" aria-hidden>
+                    add
+                  </span>
+                  Add callback
+                </button>
+              </div>
+            )}
+          </div>
         </div>
         <div className="canvas-toolbar-edit">
           <span className="canvas-connection-hint">
@@ -519,6 +642,9 @@ const CanvasComponent = () => {
                       <div className="canvas-node-description">{node.description}</div>
                     )}
                     <div className="canvas-node-meta">{node.type}</div>
+                    {node.subtype && (
+                      <div className="canvas-node-subtype">{node.subtype}</div>
+                    )}
                     <div className="canvas-node-actions">
                       <button
                         type="button"
@@ -553,7 +679,7 @@ const CanvasComponent = () => {
           </div>
         )}
         {selectedNode && (
-          <div className="canvas-inspector">
+          <div className={`canvas-inspector ${isAssistantOpen ? 'assistant-open' : ''}`}>
             <div className="canvas-inspector-title">Selected Node</div>
             <label>
               Name
@@ -564,11 +690,17 @@ const CanvasComponent = () => {
             </label>
             <div className="canvas-inspector-metrics">
               <div><strong>Type:</strong> {selectedNode.type}</div>
+              {selectedNode.subtype && (
+                <div><strong>Subtype:</strong> {selectedNode.subtype}</div>
+              )}
+              {selectedNode.description && (
+                <div><strong>Description:</strong> {selectedNode.description}</div>
+              )}
               <div><strong>Incoming:</strong> {selectedNodeConnections.incoming}</div>
               <div><strong>Outgoing:</strong> {selectedNodeConnections.outgoing}</div>
               <div><strong>Position:</strong> {Math.round(selectedNode.x)}, {Math.round(selectedNode.y)}</div>
             </div>
-            <div className="canvas-inspector-meta">Type: {selectedNode.type}</div>
+            <div className="canvas-inspector-meta">Type: {selectedNode.type}{selectedNode.subtype ? ` • ${selectedNode.subtype}` : ''}</div>
           </div>
         )}
       </div>

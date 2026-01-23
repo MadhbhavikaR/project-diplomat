@@ -24,7 +24,8 @@ function App({ queryClient }: AppProps) {
   const [, setSelectedEvent] = useState<any>(null)
   const [sessionId] = useState('session1')
   const [isBuilderMode, setIsBuilderMode] = useState(false)
-  const [isAssistantOpen, setIsAssistantOpen] = useState(false)
+  const isAssistantOpen = useStore(state => state.isAssistantOpen)
+  const setAssistantOpen = useStore(state => state.setAssistantOpen)
   const [topMode, setTopMode] = useState<'edit' | 'test'>('edit')
 
   const openFiles = useStore(state => state.openFiles)
@@ -196,7 +197,7 @@ function App({ queryClient }: AppProps) {
                   </button>
                   <button
                     className="builder-assistant-toggle"
-                    onClick={() => setIsAssistantOpen(true)}
+                    onClick={() => setAssistantOpen(true)}
                   >
                     Open Assistant
                   </button>
@@ -208,7 +209,7 @@ function App({ queryClient }: AppProps) {
                   <BuilderAssistantComponent
                     isVisible={isAssistantOpen}
                     appName="ADK Demo"
-                    onClosePanel={() => setIsAssistantOpen(false)}
+                    onClosePanel={() => setAssistantOpen(false)}
                     onReloadCanvas={() => undefined}
                   />
                 </div>

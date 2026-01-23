@@ -4,6 +4,8 @@ import type { AgentNode, CallbackNode, ToolNode } from '../types/agentBuilder'
 export interface BuilderSlice {
   agentConfig: AgentNode
   setAgentConfig: (config: AgentNode) => void
+  selectedBuilderItem: { type: 'tool' | 'callback' | 'agent'; name: string } | null
+  setSelectedBuilderItem: (item: { type: 'tool' | 'callback' | 'agent'; name: string } | null) => void
   addTool: (tool: ToolNode) => void
   removeTool: (name: string) => void
   renameTool: (oldName: string, newName: string) => void
@@ -30,6 +32,8 @@ const createDefaultConfig = (): AgentNode => ({
 export const createBuilderSlice: StateCreator<BuilderSlice, [], [], BuilderSlice> = (set) => ({
   agentConfig: createDefaultConfig(),
   setAgentConfig: (config) => set({ agentConfig: config }),
+  selectedBuilderItem: null,
+  setSelectedBuilderItem: (item) => set({ selectedBuilderItem: item }),
   addTool: (tool) =>
     set((state) => ({
       agentConfig: {

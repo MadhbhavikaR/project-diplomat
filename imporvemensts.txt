@@ -1,3 +1,1 @@
-need a way from the ui to pass refernce of a field such as text box to the chat assistant so that it can propose and apply the changes to that field. as an example, the instructions under the configuration , be filled by the user and then can be refernced in the chat may be with some kind of @ field refernce, the chat will return a response and that can be filled in the field for which the reference was sent with the @ field.
-
-update the 2 changes ↑1 ↓0 with a simple logic in demo mode that if a file is created add a to chages, if file is deleted subtract one, keep it simple for demo mode.
+do not allow self loops in the canvas connectivity

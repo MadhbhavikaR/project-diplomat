@@ -339,6 +339,12 @@
       }
     }
   }
+
+  .tool-chip-button {
+    background: var(--builder-tool-chip-background-color);
+    border: none;
+    text-align: left;
+  }
 }
 
 .callbacks-list {
@@ -354,6 +360,13 @@
   gap: 12px;
   width: 100%;
   cursor: pointer;
+}
+
+.callback-row-button {
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
 }
 
 .callback-chip {
