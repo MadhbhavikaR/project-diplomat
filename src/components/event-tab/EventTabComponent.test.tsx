@@ -10,8 +10,8 @@ jest.mock('../../store/store', () => ({
 
 describe('EventTabComponent', () => {
   const mockEvents = new Map([
-    ['event1', { title: 'Event 1', data: { key: 'value1' } }],
-    ['event2', { title: 'Event 2', data: { key: 'value2' } }],
+    ['event1', { title: 'Event 1', payload: { key: 'value1' } }],
+    ['event2', { title: 'Event 2', payload: { key: 'value2' }, graphSvg: '<svg><text>Graph</text></svg>' }],
   ])
 
   const mockTraceData = [
@@ -95,8 +95,8 @@ describe('EventTabComponent', () => {
   it('should switch to trace view when trace button is clicked', () => {
     render(<EventTabComponent {...mockProps} />)
 
-    fireEvent.click(screen.getByText('Trace'))
-    expect(screen.getByText('Trace')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Trace' }))
+    expect(screen.getByRole('button', { name: 'Trace' })).toHaveClass('active')
     expect(screen.getByText('Invocation: invoc1')).toBeInTheDocument()
   })
 
@@ -105,6 +105,21 @@ describe('EventTabComponent', () => {
 
     fireEvent.click(screen.getByText('Event 1'))
     expect(mockProps.onSelectedEvent).toHaveBeenCalledWith('event1')
+  })
+
+  it('should toggle JSON view for an event', () => {
+    render(<EventTabComponent {...mockProps} />)
+
+    fireEvent.click(screen.getAllByText('View JSON')[0])
+    expect(screen.getByText((content) => content.includes('"key": "value1"'))).toBeInTheDocument()
+  })
+
+  it('should render event graph when available', () => {
+    render(<EventTabComponent {...mockProps} />)
+
+    fireEvent.click(screen.getByText('Event 2'))
+    expect(screen.getByText('Event Graph')).toBeInTheDocument()
+    expect(screen.getByText('Graph')).toBeInTheDocument()
   })
 
   it('should show event indices', () => {
@@ -117,7 +132,7 @@ describe('EventTabComponent', () => {
   it('should show trace indices in trace view', () => {
     render(<EventTabComponent {...mockProps} />)
 
-    fireEvent.click(screen.getByText('Trace'))
+    fireEvent.click(screen.getByRole('button', { name: 'Trace' }))
     expect(screen.getByText('0')).toBeInTheDocument()
     expect(screen.getByText('1')).toBeInTheDocument()
   })
@@ -125,7 +140,7 @@ describe('EventTabComponent', () => {
   it('should show invocation IDs in trace view', () => {
     render(<EventTabComponent {...mockProps} />)
 
-    fireEvent.click(screen.getByText('Trace'))
+    fireEvent.click(screen.getByRole('button', { name: 'Trace' }))
     expect(screen.getByText('Invocation: invoc1')).toBeInTheDocument()
     expect(screen.getByText('Invocation: invoc2')).toBeInTheDocument()
   })
@@ -165,19 +180,19 @@ describe('EventTabComponent', () => {
 
     render(<EventTabComponent {...mockProps} />)
 
-    expect(screen.queryByText('Trace')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Trace' })).not.toBeInTheDocument()
   })
 
   it('should not show trace view toggle when no trace data', () => {
     render(<EventTabComponent {...mockProps} traceData={[]} />)
 
-    expect(screen.queryByText('Trace')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Trace' })).not.toBeInTheDocument()
   })
 
   it('should group trace data by trace_id', () => {
     render(<EventTabComponent {...mockProps} />)
 
-    fireEvent.click(screen.getByText('Trace'))
+    fireEvent.click(screen.getByRole('button', { name: 'Trace' }))
 
     // Should show 2 trace groups (trace1 and trace2)
     expect(screen.getByText('Invocation: invoc1')).toBeInTheDocument()
@@ -196,7 +211,7 @@ describe('EventTabComponent', () => {
 
     render(<EventTabComponent {...mockProps} traceData={traceDataWithoutInvoc} />)
 
-    fireEvent.click(screen.getByText('Trace'))
+    fireEvent.click(screen.getByRole('button', { name: 'Trace' }))
     expect(screen.getByText('Invocation: Unknown')).toBeInTheDocument()
   })
 
@@ -218,7 +233,7 @@ describe('EventTabComponent', () => {
 
     render(<EventTabComponent {...mockProps} traceData={unsortedTraceData} />)
 
-    fireEvent.click(screen.getByText('Trace'))
+    fireEvent.click(screen.getByRole('button', { name: 'Trace' }))
     // Should show the earliest span's invocation_id
     expect(screen.getByText('Invocation: invoc1')).toBeInTheDocument()
   })

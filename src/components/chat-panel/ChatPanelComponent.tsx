@@ -1,5 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import ReactMarkdown from 'react-markdown'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { useStore } from '../../store/store'
 import './ChatPanelComponent.css'
 
@@ -100,23 +102,24 @@ const ChatPanelComponent: React.FC<ChatPanelProps> = ({
 
   const navigate = useNavigate()
 
+  const rowVirtualizer = useVirtualizer({
+    count: messages.length,
+    getScrollElement: () => scrollContainerRef.current,
+    estimateSize: () => 96,
+    overscan: 8,
+  })
+
   // Handle scroll behavior
   useEffect(() => {
     if (!scrollInterrupted && messages.length > previousMessageCount) {
-      scrollToBottom()
+      rowVirtualizer.scrollToIndex(messages.length - 1, { align: 'end' })
     }
     setPreviousMessageCount(messages.length)
-  }, [messages, scrollInterrupted])
-
-  const scrollToBottom = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight
-    }
-  }
+  }, [messages.length, previousMessageCount, rowVirtualizer, scrollInterrupted])
 
   const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
     const target = event.target as HTMLDivElement
-    const isAtBottom = target.scrollHeight - target.scrollTop === target.clientHeight
+    const isAtBottom = Math.abs(target.scrollHeight - target.scrollTop - target.clientHeight) < 8
     setScrollInterrupted(!isAtBottom)
   }
 
@@ -158,10 +161,12 @@ const ChatPanelComponent: React.FC<ChatPanelProps> = ({
     return hoveredEventMessageIndices.includes(index)
   }
 
+  const virtualItems = useMemo(() => rowVirtualizer.getVirtualItems(), [rowVirtualizer])
+
   if (isSessionLoading) {
     return (
       <div className="loading-spinner-container">
-        <div className="spinner"></div>
+        <div className="spinner" data-testid="spinner"></div>
         <p>Loading session...</p>
       </div>
     )
@@ -179,69 +184,108 @@ const ChatPanelComponent: React.FC<ChatPanelProps> = ({
         onScroll={handleScroll}
       >
         {isMessagesLoading && (
-          <div className="messages-loading-container">
+          <div className="messages-loading-container" data-testid="messages-loading">
             <div className="progress-bar"></div>
           </div>
         )}
         
         <div ref={videoContainerRef} className="video-container"></div>
 
-        {messages.map((message, index) => (
-          <div key={index} className="message-column-container">
-            <div
-              className={
-                message.role === 'user' ? 'user-message' : 'bot-message'
-              }
-            >
-              {message.role === 'bot' && (
-                <button
-                  className={
-                    `agent-icon-button ${customIconColorClass(index)}` +
-                    (getAgentNameFromEvent(index) ? '' : ' hidden')
-                  }
-                  onClick={() => onClickEvent(index)}
-                  disabled={!message.eventId}
-                  title={getAgentNameFromEvent(index)}
-                >
-                  🤖
-                </button>
-              )}
+        <div className="messages-virtualizer" style={{ height: rowVirtualizer.getTotalSize() }}>
+          {virtualItems.map((virtualRow) => {
+            const message = messages[virtualRow.index]
+            if (!message) return null
 
-              {!message.functionCall && !message.functionResponse && (
-                <div
-                  className={
-                    `message-card` +
-                    (message.evalStatus === 2 ? ' eval-fail' : '') +
-                    (shouldMessageHighlighted(index) ? ' message-card--highlighted' : '')
-                  }
-                >
-                  <div className="message-content">
-                    {message.content}
+            return (
+              <div
+                key={virtualRow.key}
+                ref={rowVirtualizer.measureElement}
+                className="message-virtual-row"
+                style={{ transform: `translateY(${virtualRow.start}px)` }}
+              >
+                <div className="message-column-container">
+                  <div
+                    className={
+                      message.role === 'user' ? 'user-message' : 'bot-message'
+                    }
+                  >
+                    {message.role === 'bot' && (
+                      <button
+                        className={
+                          `agent-icon-button ${customIconColorClass(virtualRow.index)}` +
+                          (getAgentNameFromEvent(virtualRow.index) ? '' : ' hidden')
+                        }
+                        onClick={() => onClickEvent(virtualRow.index)}
+                        disabled={!message.eventId}
+                        title={getAgentNameFromEvent(virtualRow.index)}
+                      >
+                        🤖
+                      </button>
+                    )}
+
+                    {!message.functionCall && !message.functionResponse && (
+                      <div
+                        className={
+                          `message-card` +
+                          (message.evalStatus === 2 ? ' eval-fail' : '') +
+                          (shouldMessageHighlighted(virtualRow.index) ? ' message-card--highlighted' : '')
+                        }
+                      >
+                        <div className="message-content">
+                          {message.parts?.length ? (
+                            message.parts.map((part: any, partIndex: number) => {
+                              if (part.type === 'image') {
+                                return (
+                                  <img
+                                    key={partIndex}
+                                    src={part.content}
+                                    alt={part.metadata?.alt || 'attachment'}
+                                    className="message-image"
+                                  />
+                                )
+                              }
+
+                              if (part.type === 'code') {
+                                return (
+                                  <pre key={partIndex} className="message-code">
+                                    <code>{part.content}</code>
+                                  </pre>
+                                )
+                              }
+
+                              return <ReactMarkdown key={partIndex}>{part.content}</ReactMarkdown>
+                            })
+                          ) : (
+                            <ReactMarkdown>{message.content}</ReactMarkdown>
+                          )}
+                        </div>
+                        
+                        {message.role === 'bot' && isUserFeedbackEnabled && (
+                          <div className="feedback-buttons">
+                            <button
+                              className="feedback-button up"
+                              onClick={() => onFeedback('up')}
+                              title="Helpful"
+                            >
+                              👍
+                            </button>
+                            <button
+                              className="feedback-button down"
+                              onClick={() => onFeedback('down')}
+                              title="Not helpful"
+                            >
+                              👎
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  
-                  {message.role === 'bot' && isUserFeedbackEnabled && (
-                    <div className="feedback-buttons">
-                      <button
-                        className="feedback-button up"
-                        onClick={() => onFeedback('up')}
-                        title="Helpful"
-                      >
-                        👍
-                      </button>
-                      <button
-                        className="feedback-button down"
-                        onClick={() => onFeedback('down')}
-                        title="Not helpful"
-                      >
-                        👎
-                      </button>
-                    </div>
-                  )}
                 </div>
-              )}
-            </div>
-          </div>
-        ))}
+              </div>
+            )
+          })}
+        </div>
       </div>
 
       {/* Input area */}
@@ -253,6 +297,7 @@ const ChatPanelComponent: React.FC<ChatPanelProps> = ({
               onChange={(e) => onFileSelect(e.nativeEvent)}
               multiple
               className="file-input"
+              aria-label="Upload files"
             />
             <div className="selected-files">
               {selectedFiles.map((file, index) => (
@@ -270,6 +315,9 @@ const ChatPanelComponent: React.FC<ChatPanelProps> = ({
           </div>
         )}
 
+        {!canEditSession && (
+          <div className="read-only-banner">Read-only session</div>
+        )}
         <div className="input-area">
           <textarea
             ref={textareaRef}
@@ -278,13 +326,13 @@ const ChatPanelComponent: React.FC<ChatPanelProps> = ({
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             placeholder="Type your message..."
-            disabled={isLoadingAgentResponse}
+            disabled={isLoadingAgentResponse || !canEditSession}
           />
           
           <button
             className="send-button"
             onClick={(e) => onSendMessage(e.nativeEvent)}
-            disabled={isLoadingAgentResponse || !userInput.trim()}
+            disabled={isLoadingAgentResponse || !userInput.trim() || !canEditSession}
           >
             Send
           </button>

@@ -1,13 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useStore } from '../../store/store'
+import type { Session } from '../../types/session'
+import { sessionService } from '../../services/sessionService'
+import ConfirmationDialogComponent from '../dialogs/ConfirmationDialogComponent'
 import './SessionTabComponent.css'
-
-// Define TypeScript interfaces
-interface Session {
-  id: string
-  lastUpdateTime: string
-  // Add other session properties as needed
-}
 
 interface SessionTabProps {
   userId: string
@@ -30,24 +26,22 @@ const SessionTabComponent: React.FC<SessionTabProps> = ({
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [canLoadMore, setCanLoadMore] = useState(false)
   const [pageToken, setPageToken] = useState('')
+  const [newSessionName, setNewSessionName] = useState('')
+  const [isCreating, setIsCreating] = useState(false)
+  const [sessionToDelete, setSessionToDelete] = useState<Session | null>(null)
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null)
 
   // Access Zustand store
   const isSessionFilteringEnabled = useStore(state => state.isSessionFilteringEnabled)
   const isSessionListLoading = useStore(state => state.isSessionListLoading)
-
-  // Mock data for demonstration - in real implementation, this would come from API
-  const mockSessions: Session[] = [
-    { id: 'session1', lastUpdateTime: '2023-01-01T10:00:00Z' },
-    { id: 'session2', lastUpdateTime: '2023-01-02T11:00:00Z' },
-    { id: 'session3', lastUpdateTime: '2023-01-03T12:00:00Z' },
-    { id: 'session4', lastUpdateTime: '2023-01-04T13:00:00Z' },
-    { id: 'session5', lastUpdateTime: '2023-01-05T14:00:00Z' },
-  ]
+  const canEditSession = useStore(state => state.canEditSession)
+  const setSessionListLoading = useStore(state => state.setSessionListLoading)
+  const setSessionsInStore = useStore(state => state.setSessions)
+  const setActiveSessionId = useStore(state => state.setActiveSessionId)
 
   // Load initial sessions
   useEffect(() => {
-    loadSessions()
+    loadSessions(true)
   }, [userId, appName])
 
   // Debounced filter change handler
@@ -64,54 +58,71 @@ const SessionTabComponent: React.FC<SessionTabProps> = ({
       // Reset pagination when filter changes
       setPageToken('')
       setSessions([])
-      loadSessions(value)
+      loadSessions(true, value)
     }, 300)
   }
 
-  const loadSessions = (filterValue: string = filter) => {
+  const loadSessions = async (reset: boolean, filterValue: string = filter) => {
     setIsLoading(true)
+    setSessionListLoading(true)
 
-    // In a real implementation, this would be an API call
-    // For now, we'll use mock data
-    setTimeout(() => {
-      // Filter sessions if filter is provided
-      let filteredSessions = mockSessions
-      if (filterValue) {
-        filteredSessions = mockSessions.filter(session => session.id.includes(filterValue))
-      }
+    try {
+      const page = reset ? 1 : Number(pageToken || 1)
+      const response = await sessionService.listSessions({ page, pageSize: 20 })
+      const filtered = filterValue
+        ? response.items.filter((sessionItem) =>
+            sessionItem.name?.toLowerCase().includes(filterValue.toLowerCase()) ||
+            sessionItem.id.toLowerCase().includes(filterValue.toLowerCase())
+          )
+        : response.items
 
-      // Simulate pagination
-      const startIndex = pageToken ? parseInt(pageToken) : 0
-      const paginatedSessions = filteredSessions.slice(startIndex, startIndex + 3)
-
-      // Replace sessions instead of appending to avoid duplicate keys
-      setSessions(paginatedSessions)
-      setCanLoadMore(filteredSessions.length > startIndex + 3)
+      setSessions((prev) => {
+        const nextSessions = reset ? filtered : [...prev, ...filtered]
+        setSessionsInStore(nextSessions)
+        return nextSessions
+      })
+      setCanLoadMore(Boolean(response.nextPageToken))
+      setPageToken(response.nextPageToken)
+    } catch (error) {
+      console.error('Failed to load sessions', error)
+      setSessions([])
+      setSessionsInStore([])
+      setCanLoadMore(false)
+      setPageToken('')
+    } finally {
       setIsLoading(false)
-    }, 500)
+      setSessionListLoading(false)
+    }
   }
 
-  const loadMoreSessions = () => {
-    if (isLoadingMore) return
+  const loadMoreSessions = async () => {
+    if (isLoadingMore || !pageToken) return
 
     setIsLoadingMore(true)
-    const nextPageToken = (sessions.length).toString()
-    setPageToken(nextPageToken)
+    setSessionListLoading(true)
 
-    // Load more sessions
-    setTimeout(() => {
-      const startIndex = parseInt(pageToken) || 0
-      const moreSessions = mockSessions.slice(startIndex, startIndex + 3)
-
-      setSessions(prev => [...prev, ...moreSessions])
-      setCanLoadMore(mockSessions.length > startIndex + 3)
+    try {
+      const nextPage = Number(pageToken)
+      const response = await sessionService.listSessions({ page: nextPage, pageSize: 20 })
+      setSessions((prev) => {
+        const nextSessions = [...prev, ...response.items]
+        setSessionsInStore(nextSessions)
+        return nextSessions
+      })
+      setCanLoadMore(Boolean(response.nextPageToken))
+      setPageToken(response.nextPageToken)
+    } catch (error) {
+      console.error('Failed to load more sessions', error)
+    } finally {
       setIsLoadingMore(false)
-    }, 500)
+      setSessionListLoading(false)
+    }
   }
 
   const getSession = (sessionId: string) => {
     const session = sessions.find(s => s.id === sessionId)
     if (session) {
+      setActiveSessionId(session.id)
       onSessionSelected(session)
     }
   }
@@ -125,10 +136,44 @@ const SessionTabComponent: React.FC<SessionTabProps> = ({
 
   const getDate = (session: Session): string => {
     try {
-      const date = new Date(session.lastUpdateTime)
+      const date = new Date(session.updatedAt)
       return date.toLocaleString()
     } catch {
-      return session.lastUpdateTime
+      return session.updatedAt.toString()
+    }
+  }
+
+  const handleCreateSession = async () => {
+    if (isCreating) return
+    const name = newSessionName.trim() || `Session ${new Date().toLocaleTimeString()}`
+
+    setIsCreating(true)
+    try {
+      const session = await sessionService.createSession(name, appName)
+      setNewSessionName('')
+      setActiveSessionId(session.id)
+      await loadSessions(true)
+      onSessionSelected(session)
+    } catch (error) {
+      console.error('Failed to create session', error)
+    } finally {
+      setIsCreating(false)
+    }
+  }
+
+  const confirmDeleteSession = (session: Session) => {
+    setSessionToDelete(session)
+  }
+
+  const handleDeleteSession = async () => {
+    if (!sessionToDelete) return
+
+    try {
+      await sessionService.deleteSession(sessionToDelete.id)
+      setSessionToDelete(null)
+      await loadSessions(true)
+    } catch (error) {
+      console.error('Failed to delete session', error)
     }
   }
 
@@ -146,6 +191,22 @@ const SessionTabComponent: React.FC<SessionTabProps> = ({
               className="filter-input"
             />
             <span className="filter-icon">🔍</span>
+          </div>
+          <div className="session-create-row">
+            <input
+              type="text"
+              placeholder="New session name"
+              value={newSessionName}
+              onChange={(event) => setNewSessionName(event.target.value)}
+              className="create-session-input"
+            />
+            <button
+              className="create-session-button"
+              onClick={handleCreateSession}
+              disabled={isCreating}
+            >
+              Create
+            </button>
           </div>
         </div>
       )}
@@ -176,13 +237,25 @@ const SessionTabComponent: React.FC<SessionTabProps> = ({
               onClick={() => getSession(session.id)}
             >
               <div className="session-info">
-                <div className="session-id">{session.id}</div>
+                <div className="session-id">{session.name || session.id}</div>
                 <div className="session-date">{getDate(session)}</div>
               </div>
-              {/* In a real implementation, this would check edit permissions */}
-              <div className="readonly-badge">
-                <span>👁️</span>
-                <span>Read-only</span>
+              <div className="session-actions">
+                {!canEditSession && (
+                  <div className="readonly-badge">
+                    <span>👁️</span>
+                    <span>Read-only</span>
+                  </div>
+                )}
+                <button
+                  className="delete-session-button"
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    confirmDeleteSession(session)
+                  }}
+                >
+                  Delete
+                </button>
               </div>
             </div>
           ))}
@@ -206,6 +279,14 @@ const SessionTabComponent: React.FC<SessionTabProps> = ({
           </button>
         </div>
       )}
+      <ConfirmationDialogComponent
+        open={Boolean(sessionToDelete)}
+        title="Delete session"
+        description="Are you sure you want to delete this session?"
+        confirmLabel="Delete"
+        onConfirm={handleDeleteSession}
+        onCancel={() => setSessionToDelete(null)}
+      />
     </div>
   )
 }

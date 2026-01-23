@@ -199,6 +199,46 @@ describe('ChatPanelComponent', () => {
     expect(mockProps.onUserInputChange).toHaveBeenCalledWith('New message')
   })
 
+  it('should show read-only banner and disable input when cannot edit session', () => {
+    ;(useStore as jest.Mock).mockImplementation((selector) => {
+      const state = {
+        isSessionLoading: false,
+        isMessagesLoading: false,
+        isLoadingAgentResponse: false,
+        isUserFeedbackEnabled: true,
+        isMessageFileUploadEnabled: true,
+        isManualStateUpdateEnabled: true,
+        isBidiStreamingEnabled: false,
+        canEditSession: false,
+        currentSession: null,
+        selectedEvent: null,
+        uiState: {},
+        setSessionLoading: jest.fn(),
+        setMessagesLoading: jest.fn(),
+        setLoadingAgentResponse: jest.fn(),
+        setUserFeedbackEnabled: jest.fn(),
+        setMessageFileUploadEnabled: jest.fn(),
+        setManualStateUpdateEnabled: jest.fn(),
+        setBidiStreamingEnabled: jest.fn(),
+        setCanEditSession: jest.fn(),
+        setCurrentSession: jest.fn(),
+        setSelectedEvent: jest.fn(),
+        setUiState: jest.fn(),
+      }
+      return selector ? selector(state) : state
+    })
+
+    render(
+      <MemoryRouter>
+        <ChatPanelComponent {...mockProps} userInput="Test" />
+      </MemoryRouter>
+    )
+
+    expect(screen.getByText('Read-only session')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Type your message...')).toBeDisabled()
+    expect(screen.getByText('Send')).toBeDisabled()
+  })
+
   it('should call onSendMessage when send button is clicked', () => {
     render(
       <MemoryRouter>
@@ -292,7 +332,7 @@ describe('ChatPanelComponent', () => {
       </MemoryRouter>
     )
 
-    expect(screen.getByText('Upload files')).toBeInTheDocument()
+    expect(screen.getByLabelText('Upload files')).toBeInTheDocument()
   })
 
   it('should call onFileSelect when file input changes', () => {

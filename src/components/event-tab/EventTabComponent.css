@@ -66,6 +66,7 @@
   border-bottom: 1px solid #eee;
   cursor: pointer;
   transition: background-color 0.2s;
+  flex-wrap: wrap;
 }
 
 .event-list-item:hover {
@@ -92,6 +93,21 @@
   color: #333;
 }
 
+.event-json-toggle {
+  margin-left: auto;
+  background-color: transparent;
+  border: 1px solid #1976d2;
+  color: #1976d2;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.event-json-toggle:hover {
+  background-color: rgba(25, 118, 210, 0.08);
+}
+
 .event-json {
   margin-top: 10px;
   padding: 10px;
@@ -100,6 +116,23 @@
   font-family: monospace;
   font-size: 12px;
   overflow-x: auto;
+}
+
+.event-graph {
+  margin: 16px 15px;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  background-color: #ffffff;
+}
+
+.event-graph-content {
+  overflow-x: auto;
+}
+
+.event-graph-empty {
+  color: #666;
+  font-size: 12px;
 }
 
 .empty-state {

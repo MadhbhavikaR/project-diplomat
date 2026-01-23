@@ -6,7 +6,9 @@
  * that can help with agent creation and configuration.
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useStore } from '../../store/store';
+import { streamChatService } from '../../services/streamChatService';
 import './BuilderAssistantComponent.css';
 
 // Define TypeScript interfaces
@@ -33,10 +35,14 @@ const BuilderAssistantComponent: React.FC<BuilderAssistantComponentProps> = ({
   const [userMessage, setUserMessage] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [shouldAutoScroll, setShouldAutoScroll] = useState<boolean>(false);
+  const [socket, setSocket] = useState<WebSocket | null>(null);
   const chatMessagesRef = useRef<HTMLDivElement>(null);
+  const assistantMode = useStore(state => state.assistantMode);
+  const setAssistantMode = useStore(state => state.setAssistantMode);
 
   const assistantAppName = "__adk_agent_builder_assistant";
   const userId = "user";
+  const assistantSessionId = `${assistantAppName}-${appName}`;
 
   // Initialize assistant when component mounts
   useEffect(() => {
@@ -44,6 +50,32 @@ const BuilderAssistantComponent: React.FC<BuilderAssistantComponentProps> = ({
       initializeAssistant();
     }
   }, [isVisible, appName]);
+
+  useEffect(() => {
+    if (!isVisible) {
+      return;
+    }
+
+    const ws = streamChatService.connect(assistantSessionId, (event) => {
+      try {
+        const payload = JSON.parse(event.data) as { role?: 'user' | 'bot'; content?: string };
+        if (payload?.content) {
+          setMessages(prev => [...prev, { role: payload.role || 'bot', text: payload.content }]);
+          setShouldAutoScroll(true);
+          setIsGenerating(false);
+        }
+      } catch {
+        // Ignore malformed payloads
+      }
+    });
+
+    setSocket(ws);
+
+    return () => {
+      ws.close();
+      setSocket(null);
+    };
+  }, [assistantSessionId, isVisible]);
 
   // Auto-scroll when shouldAutoScroll is true
   useEffect(() => {
@@ -67,7 +99,7 @@ const BuilderAssistantComponent: React.FC<BuilderAssistantComponentProps> = ({
     setTimeout(() => {
       const welcomeMessage: Message = {
         role: 'bot',
-        text: `Hello! I'm your ADK Agent Builder Assistant. I can help you build and configure agents for your application.\n\nYou're currently working on the **${appName}** application. How can I assist you today?`
+        text: `Hello! I'm your ADK Agent Builder Assistant. I can help you build and configure agents for your application.\n\nYou're currently working on the **${appName}** application. I'm in **${assistantMode.toUpperCase()}** mode. How can I assist you today?`
       };
       setMessages([welcomeMessage]);
       setIsGenerating(false);
@@ -91,8 +123,17 @@ const BuilderAssistantComponent: React.FC<BuilderAssistantComponentProps> = ({
     setShouldAutoScroll(true);
     setIsGenerating(true);
 
-    // In a real implementation, this would call the agent service
-    // For now, we'll simulate a response
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      streamChatService.sendMessage(socket, {
+        content: `[${assistantMode.toUpperCase()}] ${msg}`,
+        role: 'user',
+        sessionId: assistantSessionId,
+      });
+      setIsGenerating(false);
+      return;
+    }
+
+    // Fallback: simulate a response
     simulateAssistantResponse(msg);
   };
 
@@ -108,7 +149,7 @@ const BuilderAssistantComponent: React.FC<BuilderAssistantComponentProps> = ({
       } else if (userMsg.toLowerCase().includes('thank')) {
         responseText = `You're welcome! I'm here to help anytime you need assistance with building your agents. Just let me know what you need. 😊`;
       } else {
-        responseText = `I understand you'd like help with: "${userMsg}".\n\nHere's what I can do:\n\n1. Provide step-by-step guidance for implementing this feature\n2. Suggest best practices and patterns\n3. Help troubleshoot any issues you encounter\n\nWould you like me to provide detailed instructions or are you looking for something specific?`;
+        responseText = `(${assistantMode.toUpperCase()} MODE) I understand you'd like help with: "${userMsg}".\n\nHere's what I can do:\n\n1. Provide step-by-step guidance for implementing this feature\n2. Suggest best practices and patterns\n3. Help troubleshoot any issues you encounter\n\nWould you like me to provide detailed instructions or are you looking for something specific?`;
       }
 
       // Update the loading message with the response
@@ -170,6 +211,20 @@ const BuilderAssistantComponent: React.FC<BuilderAssistantComponentProps> = ({
         <div className="panel-title">
           <span className="assistant-icon">✨</span>
           <span>Assistant</span>
+        </div>
+        <div className="assistant-mode-toggle">
+          <button
+            className={`mode-button ${assistantMode === 'plan' ? 'active' : ''}`}
+            onClick={() => setAssistantMode('plan')}
+          >
+            Plan
+          </button>
+          <button
+            className={`mode-button ${assistantMode === 'act' ? 'active' : ''}`}
+            onClick={() => setAssistantMode('act')}
+          >
+            Act
+          </button>
         </div>
         <button
           className="close-btn"

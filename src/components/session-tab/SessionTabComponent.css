@@ -11,6 +11,35 @@
   border-bottom: 1px solid #e0e0e0;
 }
 
+.session-create-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.create-session-input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.create-session-button {
+  background-color: #1976d2;
+  color: #fff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.create-session-button:disabled {
+  background-color: #b0bec5;
+  cursor: not-allowed;
+}
+
 .session-filter-input {
   position: relative;
 }
@@ -67,6 +96,26 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.session-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.delete-session-button {
+  background-color: transparent;
+  border: 1px solid #f44336;
+  color: #f44336;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.delete-session-button:hover {
+  background-color: rgba(244, 67, 54, 0.1);
 }
 
 .session-item:hover {

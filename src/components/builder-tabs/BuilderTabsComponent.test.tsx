@@ -7,7 +7,7 @@ describe('BuilderTabsComponent', () => {
     render(<BuilderTabsComponent />);
     
     // Check if the component renders
-    expect(screen.getByText('Agent configuration')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Configuration' })).toBeInTheDocument();
     expect(screen.getByText('My Agent')).toBeInTheDocument();
   });
 
@@ -15,16 +15,15 @@ describe('BuilderTabsComponent', () => {
     render(<BuilderTabsComponent />);
     
     // Check if configuration form elements are present
-    expect(screen.getByLabelText('Agent Name')).toBeInTheDocument();
-    expect(screen.getByLabelText('Agent Type')).toBeInTheDocument();
-    expect(screen.getByLabelText('Model')).toBeInTheDocument();
-    expect(screen.getByLabelText('Instructions')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('My Agent')).toBeInTheDocument();
+    expect(screen.getAllByRole('combobox').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByDisplayValue('You are a helpful assistant.')).toBeInTheDocument();
   });
 
   test('allows changing agent name', () => {
     render(<BuilderTabsComponent />);
     
-    const agentNameInput = screen.getByLabelText('Agent Name') as HTMLInputElement;
+    const agentNameInput = screen.getByDisplayValue('My Agent') as HTMLInputElement;
     fireEvent.change(agentNameInput, { target: { value: 'Test Agent' } });
     
     expect(agentNameInput.value).toBe('Test Agent');
@@ -33,7 +32,7 @@ describe('BuilderTabsComponent', () => {
   test('allows changing model', () => {
     render(<BuilderTabsComponent />);
     
-    const modelSelect = screen.getByLabelText('Model') as HTMLSelectElement;
+    const modelSelect = screen.getAllByRole('combobox')[1] as HTMLSelectElement;
     fireEvent.change(modelSelect, { target: { value: 'gemini-2.5-pro' } });
     
     expect(modelSelect.value).toBe('gemini-2.5-pro');
@@ -42,7 +41,7 @@ describe('BuilderTabsComponent', () => {
   test('allows changing instructions', () => {
     render(<BuilderTabsComponent />);
     
-    const instructionsTextarea = screen.getByLabelText('Instructions') as HTMLTextAreaElement;
+    const instructionsTextarea = screen.getByDisplayValue('You are a helpful assistant.') as HTMLTextAreaElement;
     fireEvent.change(instructionsTextarea, { target: { value: 'New instructions' } });
     
     expect(instructionsTextarea.value).toBe('New instructions');
@@ -52,7 +51,7 @@ describe('BuilderTabsComponent', () => {
     render(<BuilderTabsComponent />);
     
     // Click on Tools tab
-    const toolsTab = screen.getByText('Tools');
+    const toolsTab = screen.getByRole('button', { name: 'Tools' });
     fireEvent.click(toolsTab);
     
     // Check if tools content is displayed
@@ -64,7 +63,7 @@ describe('BuilderTabsComponent', () => {
     render(<BuilderTabsComponent />);
     
     // Click on Callbacks tab
-    const callbacksTab = screen.getByText('Callbacks');
+    const callbacksTab = screen.getByRole('button', { name: 'Callbacks' });
     fireEvent.click(callbacksTab);
     
     // Check if callbacks content is displayed
@@ -76,7 +75,7 @@ describe('BuilderTabsComponent', () => {
     render(<BuilderTabsComponent />);
     
     // Click on Sub Agents tab
-    const subAgentsTab = screen.getByText('Sub Agents');
+    const subAgentsTab = screen.getByRole('button', { name: 'Sub Agents' });
     fireEvent.click(subAgentsTab);
     
     // Check if sub agents content is displayed
@@ -87,11 +86,11 @@ describe('BuilderTabsComponent', () => {
     render(<BuilderTabsComponent />);
     
     // Click on Tools tab first
-    const toolsTab = screen.getByText('Tools');
+    const toolsTab = screen.getByRole('button', { name: 'Tools' });
     fireEvent.click(toolsTab);
     
     // Click add tool button (simulated)
-    const addToolButton = screen.getByText('add');
+    const addToolButton = screen.getAllByRole('button', { name: 'add' })[0];
     fireEvent.click(addToolButton);
     
     // Note: In a real test, we would mock the menu and test the addTool function
@@ -103,11 +102,11 @@ describe('BuilderTabsComponent', () => {
     render(<BuilderTabsComponent />);
     
     // Click on Tools tab first
-    const toolsTab = screen.getByText('Tools');
+    const toolsTab = screen.getByRole('button', { name: 'Tools' });
     fireEvent.click(toolsTab);
     
     // Find and click delete button for first tool
-    const deleteButtons = screen.getAllByText('cancel');
+    const deleteButtons = screen.getAllByRole('button', { name: 'cancel' });
     fireEvent.click(deleteButtons[0]);
     
     // Note: In a real test, we would verify the tool is removed

@@ -1,17 +1,30 @@
 import { useState } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { CssBaseline, ThemeProvider } from '@mui/material'
 import './App.css'
 import ChatComponent from './components/chat/ChatComponent'
 import SidePanelComponent from './components/side-panel/SidePanelComponent'
-import ChatPanelComponent from './components/chat-panel/ChatPanelComponent'
 import EventTabComponent from './components/event-tab/EventTabComponent'
 import SessionTabComponent from './components/session-tab/SessionTabComponent'
+import TraceTabComponent from './components/trace-tab/TraceTabComponent'
+import GitStatusBarComponent from './components/git-status-bar/GitStatusBarComponent'
+import BuilderTabsComponent from './components/builder-tabs/BuilderTabsComponent'
+import CanvasComponent from './components/canvas/CanvasComponent'
+import BuilderAssistantComponent from './components/builder-assistant/BuilderAssistantComponent'
+import { theme } from './theme/theme'
+import type { QueryClient } from '@tanstack/react-query'
 
-function App() {
+interface AppProps {
+  queryClient: QueryClient
+}
+
+function App({ queryClient }: AppProps) {
   const [showSidePanel, setShowSidePanel] = useState(true)
   const [, setSelectedEvent] = useState<any>(null)
   const [activeTab, setActiveTab] = useState(0)
   const [sessionId] = useState('session1')
+  const [isBuilderMode, setIsBuilderMode] = useState(false)
+  const [isAssistantOpen, setIsAssistantOpen] = useState(false)
 
   // Mock data for demonstration
   const mockApps = ['App 1', 'App 2', 'App 3']
@@ -36,119 +49,139 @@ function App() {
   }
 
   return (
-    <div className="app-container">
-      {/* Side Panel - Left side */}
-      <div className="side-panel-container">
-        <SidePanelComponent
-          appName="ADK Demo"
-          userId="user123"
-          sessionId="session456"
-          traceData={[]}
-          eventData={mockEvents}
-          currentSessionState={null}
-          artifacts={[]}
-          selectedEventIndex={0}
-          renderedEventGraph={undefined}
-          rawSvgString={null}
-          llmRequest={null}
-          llmResponse={null}
-          showSidePanel={showSidePanel}
-          isApplicationSelectorEnabled={true}
-          apps={mockApps}
-          isLoadingApps={false}
-          selectedApp={mockApps[0]}
-          isBuilderMode={false}
-          disableBuilderIcon={false}
-          onClosePanel={handleClosePanel}
-          onAppSelectionChange={(e) => console.log('App changed:', e)}
-          onTabChange={handleTabChange}
-          onEventSelected={handleEventSelected}
-          onSessionSelected={(session) => console.log('Session selected:', session)}
-          onSessionReloaded={(session) => console.log('Session reloaded:', session)}
-          onEvalCaseSelected={(evalCase) => console.log('Eval case selected:', evalCase)}
-          onEvalSetIdSelected={(evalSetId) => console.log('Eval set ID selected:', evalSetId)}
-          onReturnToSession={(returnToSession) => console.log('Return to session:', returnToSession)}
-          onEvalNotInstalled={(message) => console.log('Eval not installed:', message)}
-          onPageChange={(event) => console.log('Page changed:', event)}
-          onCloseSelectedEvent={() => setSelectedEvent(null)}
-          onOpenImageDialog={(imageUrl) => console.log('Open image dialog:', imageUrl)}
-          onOpenAddItemDialog={(open) => console.log('Open add item dialog:', open)}
-          onEnterBuilderMode={(enter) => console.log('Enter builder mode:', enter)}
-        />
-      </div>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <div className="app-container">
+          {/* Side Panel - Left side */}
+          {showSidePanel ? (
+            <div className="side-panel-container">
+              <SidePanelComponent
+                appName="ADK Demo"
+                userId="user123"
+                sessionId="session456"
+                traceData={[]}
+                eventData={mockEvents}
+                currentSessionState={null}
+                artifacts={[]}
+                selectedEventIndex={0}
+                renderedEventGraph={undefined}
+                rawSvgString={null}
+                llmRequest={null}
+                llmResponse={null}
+                showSidePanel={showSidePanel}
+                isApplicationSelectorEnabled={true}
+                apps={mockApps}
+                isLoadingApps={false}
+                selectedApp={mockApps[0]}
+                isBuilderMode={isBuilderMode}
+                disableBuilderIcon={false}
+                onClosePanel={handleClosePanel}
+                onAppSelectionChange={(e) => console.log('App changed:', e)}
+                onTabChange={handleTabChange}
+                onEventSelected={handleEventSelected}
+                onSessionSelected={(session) => console.log('Session selected:', session)}
+                onSessionReloaded={(session) => console.log('Session reloaded:', session)}
+                onEvalCaseSelected={(evalCase) => console.log('Eval case selected:', evalCase)}
+                onEvalSetIdSelected={(evalSetId) => console.log('Eval set ID selected:', evalSetId)}
+                onReturnToSession={(returnToSession) => console.log('Return to session:', returnToSession)}
+                onEvalNotInstalled={(message) => console.log('Eval not installed:', message)}
+                onPageChange={(event) => console.log('Page changed:', event)}
+                onCloseSelectedEvent={() => setSelectedEvent(null)}
+                onOpenImageDialog={(imageUrl) => console.log('Open image dialog:', imageUrl)}
+                onOpenAddItemDialog={(open) => console.log('Open add item dialog:', open)}
+                onEnterBuilderMode={(enter) => setIsBuilderMode(enter)}
+              />
+            </div>
+          ) : (
+            <button
+              className="side-panel-toggle"
+              onClick={() => setShowSidePanel(true)}
+              aria-label="Expand side panel"
+            >
+              ☰
+            </button>
+          )}
 
-      {/* Main Content Area */}
-      <div className="main-content">
-        {/* Chat Panel - Top area */}
-        <div className="chat-panel-container">
-          <ChatPanelComponent
-            appName="ADK Demo"
-            sessionName="Demo Session"
-            messages={[]}
-            isChatMode={true}
-            evalCase={null}
-            isEvalEditMode={false}
-            isEvalCaseEditing={false}
-            isEditFunctionArgsEnabled={false}
-            userInput=""
-            userEditEvalCaseMessage=""
-            selectedFiles={[]}
-            updatedSessionState={null}
-            eventData={new Map()}
-            isAudioRecording={false}
-            isVideoRecording={false}
-            hoveredEventMessageIndices={[]}
-            onUserInputChange={(input) => console.log('User input changed:', input)}
-            onUserEditEvalCaseMessageChange={(message) => console.log('Edit eval case message:', message)}
-            onClickEvent={(index) => console.log('Event clicked:', index)}
-            onHandleKeydown={(event) => console.log('Key down:', event)}
-            onCancelEditMessage={(message) => console.log('Cancel edit message:', message)}
-            onSaveEditMessage={(message) => console.log('Save edit message:', message)}
-            onOpenViewImageDialog={(imageUrl) => console.log('Open view image dialog:', imageUrl)}
-            onOpenBase64InNewTab={(data) => console.log('Open base64 in new tab:', data)}
-            onEditEvalCaseMessage={(message) => console.log('Edit eval case message:', message)}
-            onDeleteEvalCaseMessage={(params) => console.log('Delete eval case message:', params)}
-            onEditFunctionArgs={(args) => console.log('Edit function args:', args)}
-            onFileSelect={(event) => console.log('File selected:', event)}
-            onRemoveFile={(index) => console.log('Remove file:', index)}
-            onRemoveStateUpdate={() => console.log('Remove state update')}
-            onSendMessage={(event) => console.log('Send message:', event)}
-            onUpdateState={() => console.log('Update state')}
-            onToggleAudioRecording={() => console.log('Toggle audio recording')}
-            onToggleVideoRecording={() => console.log('Toggle video recording')}
-            onFeedback={(direction) => console.log('Feedback:', direction)}
-          />
+          {/* Main Content Area */}
+          <div className="main-content">
+            <GitStatusBarComponent repoPath="/repo" />
+            {isBuilderMode ? (
+              <div className="builder-layout">
+                <div className="builder-toolbar">
+                  <button
+                    className="builder-exit"
+                    onClick={() => setIsBuilderMode(false)}
+                  >
+                    Exit Builder
+                  </button>
+                  <button
+                    className="builder-assistant-toggle"
+                    onClick={() => setIsAssistantOpen(true)}
+                  >
+                    Open Assistant
+                  </button>
+                </div>
+                <div className="builder-content">
+                  <div className="builder-canvas">
+                    <CanvasComponent />
+                  </div>
+                  <div className="builder-tabs">
+                    <BuilderTabsComponent />
+                  </div>
+                  <BuilderAssistantComponent
+                    isVisible={isAssistantOpen}
+                    appName="ADK Demo"
+                    onClosePanel={() => setIsAssistantOpen(false)}
+                    onReloadCanvas={() => undefined}
+                  />
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Chat Panel - Top area */}
+                <div className="chat-panel-container">
+                  <ChatComponent />
+                </div>
+
+                {/* Session Tab - Bottom area (visible when sessions tab is active) */}
+                {activeTab === 0 && (
+                  <div className="session-tab-container">
+                    <SessionTabComponent
+                      userId="user123"
+                      appName="ADK Demo"
+                      sessionId={sessionId}
+                      onSessionSelected={(session) => console.log('Session selected:', session)}
+                      onSessionReloaded={(session) => console.log('Session reloaded:', session)}
+                    />
+                  </div>
+                )}
+
+                {/* Event Tab - Bottom area (visible when events tab is active) */}
+                {activeTab === 1 && (
+                  <div className="event-tab-container">
+                    <TraceTabComponent traceData={[]} sessionId={sessionId} />
+                  </div>
+                )}
+
+                {/* Event Tab - Bottom area (visible when events tab is active) */}
+                {activeTab === 2 && (
+                  <div className="event-tab-container">
+                    <EventTabComponent
+                      eventsMap={mockEvents}
+                      traceData={mockTraceData}
+                      sessionId={sessionId}
+                      onSelectedEvent={handleEventSelected}
+                    />
+                  </div>
+                )}
+              </>
+            )}
+
+          </div>
         </div>
-
-        {/* Session Tab - Bottom area (visible when sessions tab is active) */}
-        {activeTab === 0 && (
-          <div className="session-tab-container">
-            <SessionTabComponent
-              userId="user123"
-              appName="ADK Demo"
-              sessionId={sessionId}
-              onSessionSelected={(session) => console.log('Session selected:', session)}
-              onSessionReloaded={(session) => console.log('Session reloaded:', session)}
-            />
-          </div>
-        )}
-
-        {/* Event Tab - Bottom area (visible when events tab is active) */}
-        {activeTab === 2 && (
-          <div className="event-tab-container">
-            <EventTabComponent
-              eventsMap={mockEvents}
-              traceData={mockTraceData}
-              onSelectedEvent={handleEventSelected}
-            />
-          </div>
-        )}
-
-        <Routes>
-          <Route path="/" element={<ChatComponent />} />
-        </Routes>
-      </div>
-    </div>
+      </ThemeProvider>
+    </QueryClientProvider>
   )
 }
 

@@ -1,182 +1,96 @@
-/**
- * Session Service for React ADK-WEB
- * Provides session management functionality equivalent to Angular implementation
- */
+import type { Session } from '../types/session'
+import { apiClient } from './apiClient'
+import { getViteEnv } from '../utils/vite-env'
 
-import type { Session } from '../types/agentBuilder';
+interface SessionListResponse {
+  data: Session[]
+  total: number
+  page: number
+  pageSize: number
+  hasMore: boolean
+}
 
 class SessionService {
-  private apiServerDomain: string = ''; // Would be set from runtime config
+  async createSession(name: string, agentId: string): Promise<Session> {
+    const env = getViteEnv()
+    if (!env.VITE_API_URL && !env.VITE_API_SERVER_DOMAIN) {
+      return {
+        id: `session_${Math.random().toString(36).slice(2, 9)}`,
+        name,
+        agentId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        state: 'active',
+        messageCount: 0,
+      }
+    }
 
-  constructor() {
-    // Initialize with default or runtime configuration
-    this.apiServerDomain = import.meta.env.VITE_API_SERVER_DOMAIN || '';
+    return apiClient.post<Session>('/sessions', { name, agentId })
   }
 
-  async createSession(userId: string, appName: string): Promise<Session> {
-    if (!this.apiServerDomain) {
-      // Mock response for development
-      return {
-        id: `session_${Math.random().toString(36).substr(2, 9)}`,
-        appName,
-        userId,
-        state: {},
-        events: [],
-        lastUpdateTime: Date.now()
-      };
-    }
-
-    try {
-      const url = `${this.apiServerDomain}/apps/${appName}/users/${userId}/sessions`;
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to create session: ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error creating session:', error);
-      throw error;
-    }
-  }
-
-  async listSessions(userId: string, appName: string): Promise<{items: Session[], nextPageToken: string}> {
-    if (!this.apiServerDomain) {
-      // Mock response for development
-      return {
-        items: [
-          {
-            id: `session_${Math.random().toString(36).substr(2, 9)}`,
-            appName,
-            userId,
-            state: {},
-            events: [],
-            lastUpdateTime: Date.now()
-          }
-        ],
-        nextPageToken: ''
-      };
-    }
-
-    try {
-      const url = `${this.apiServerDomain}/apps/${appName}/users/${userId}/sessions`;
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to list sessions: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      return {
-        items: data as Session[],
-        nextPageToken: ''
-      };
-    } catch (error) {
-      console.error('Error listing sessions:', error);
+  async listSessions(params?: {
+    page?: number
+    pageSize?: number
+    agentId?: string
+    state?: string
+  }): Promise<{ items: Session[]; nextPageToken: string } > {
+    const env = getViteEnv()
+    if (!env.VITE_API_URL && !env.VITE_API_SERVER_DOMAIN) {
       return {
         items: [],
-        nextPageToken: ''
-      };
+        nextPageToken: '',
+      }
     }
-  }
 
-  async deleteSession(userId: string, appName: string, sessionId: string): Promise<void> {
-    if (!this.apiServerDomain) {
-      console.log('Mock: Session deleted', sessionId);
-      return;
-    }
+    const search = new URLSearchParams()
+    if (params?.page) search.set('page', String(params.page))
+    if (params?.pageSize) search.set('pageSize', String(params.pageSize))
+    if (params?.agentId) search.set('agentId', params.agentId)
+    if (params?.state) search.set('state', params.state)
 
     try {
-      const url = `${this.apiServerDomain}/apps/${appName}/users/${userId}/sessions/${sessionId}`;
-      const response = await fetch(url, {
-        method: 'DELETE'
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to delete session: ${response.statusText}`);
+      const response = await apiClient.get<SessionListResponse>(`/sessions?${search}`)
+      return {
+        items: response.data,
+        nextPageToken: response.hasMore ? String(response.page + 1) : '',
       }
     } catch (error) {
-      console.error('Error deleting session:', error);
-      throw error;
+      return {
+        items: [],
+        nextPageToken: '',
+      }
     }
   }
 
-  async getSession(userId: string, appName: string, sessionId: string): Promise<Session> {
-    if (!this.apiServerDomain) {
-      // Mock response for development
+  async deleteSession(sessionId: string): Promise<void> {
+    const env = getViteEnv()
+    if (!env.VITE_API_URL && !env.VITE_API_SERVER_DOMAIN) {
+      return
+    }
+
+    await apiClient.delete<void>(`/sessions/${sessionId}`)
+  }
+
+  async getSession(sessionId: string): Promise<Session> {
+    const env = getViteEnv()
+    if (!env.VITE_API_URL && !env.VITE_API_SERVER_DOMAIN) {
       return {
         id: sessionId,
-        appName,
-        userId,
-        state: {},
-        events: [],
-        lastUpdateTime: Date.now()
-      };
-    }
-
-    try {
-      const url = `${this.apiServerDomain}/apps/${appName}/users/${userId}/sessions/${sessionId}`;
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to get session: ${response.statusText}`);
+        name: 'Local Session',
+        agentId: 'agent-local',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        state: 'active',
+        messageCount: 0,
       }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error getting session:', error);
-      throw error;
-    }
-  }
-
-  async importSession(userId: string, appName: string, events: any[]): Promise<Session> {
-    if (!this.apiServerDomain) {
-      // Mock response for development
-      return {
-        id: `session_${Math.random().toString(36).substr(2, 9)}`,
-        appName,
-        userId,
-        state: {},
-        events,
-        lastUpdateTime: Date.now()
-      };
     }
 
-    try {
-      const url = `${this.apiServerDomain}/apps/${appName}/users/${userId}/sessions`;
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          appName,
-          userId,
-          events
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to import session: ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error importing session:', error);
-      throw error;
-    }
+    return apiClient.get<Session>(`/sessions/${sessionId}`)
   }
 
   async canEdit(): Promise<boolean> {
-    // For now, always return true (matches Angular implementation)
-    return true;
+    return true
   }
 }
 
-export const sessionService = new SessionService();
+export const sessionService = new SessionService()

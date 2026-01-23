@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import './SidePanelComponent.css'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../../store/store'
@@ -26,7 +26,7 @@ interface SidePanelProps {
   disableBuilderIcon: boolean
   onClosePanel: () => void
   onAppSelectionChange: (event: any) => void
-  onTabChange: (event: any) => void
+  onTabChange: (index: number) => void
   onEventSelected: (eventId: string) => void
   onSessionSelected: (session: any) => void
   onSessionReloaded: (session: any) => void
@@ -79,7 +79,9 @@ const SidePanelComponent: React.FC<SidePanelProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState(0)
   const [searchTerm, setSearchTerm] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
+  const [isResizing, setIsResizing] = useState(false)
+  const resizeStartX = useRef(0)
+  const resizeStartWidth = useRef(320)
   const navigate = useNavigate()
   
   // Access Zustand store state and actions
@@ -90,6 +92,9 @@ const SidePanelComponent: React.FC<SidePanelProps> = ({
   const setSelectedEvent = useStore(state => state.setSelectedEvent)
   const uiState = useStore(state => state.uiState)
   const setUiState = useStore(state => state.setUiState)
+  const [panelWidth, setPanelWidth] = useState<number>(
+    typeof uiState?.sidePanelWidth === 'number' ? uiState.sidePanelWidth : 320
+  )
 
   // Filter apps based on search term
   const filteredApps = apps.filter(app =>
@@ -98,7 +103,7 @@ const SidePanelComponent: React.FC<SidePanelProps> = ({
 
   const handleTabChange = (index: number) => {
     setActiveTab(index)
-    onTabChange({ index })
+    onTabChange(index)
     
     // Add routing based on tab selection
     switch (index) {
@@ -130,10 +135,42 @@ const SidePanelComponent: React.FC<SidePanelProps> = ({
     setSearchTerm(event.target.value)
   }
 
+  const handleResizeStart = (event: React.MouseEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    setIsResizing(true)
+    resizeStartX.current = event.clientX
+    resizeStartWidth.current = panelWidth
+  }
+
+  useEffect(() => {
+    if (!isResizing) {
+      return
+    }
+
+    const handleMouseMove = (event: MouseEvent) => {
+      const delta = event.clientX - resizeStartX.current
+      const nextWidth = Math.min(520, Math.max(240, resizeStartWidth.current + delta))
+      setPanelWidth(nextWidth)
+      setUiState({ ...(uiState || {}), sidePanelWidth: nextWidth })
+    }
+
+    const handleMouseUp = () => {
+      setIsResizing(false)
+    }
+
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mouseup', handleMouseUp)
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [isResizing, panelWidth, setUiState, uiState])
+
   if (isSessionLoading) {
     return (
       <div className="loading-spinner-container">
-        <div className="spinner"></div>
+        <div className="spinner" data-testid="spinner"></div>
         <p>Loading session...</p>
       </div>
     )
@@ -144,7 +181,7 @@ const SidePanelComponent: React.FC<SidePanelProps> = ({
   }
 
   return (
-    <div className="side-panel">
+    <div className="side-panel" style={{ width: panelWidth }}>
       {/* Header with logo and controls */}
       <div className="panel-header">
         <div className="panel-logo">
@@ -302,6 +339,7 @@ const SidePanelComponent: React.FC<SidePanelProps> = ({
           </div>
         </div>
       )}
+      <div className="side-panel-resize-handle" onMouseDown={handleResizeStart} />
     </div>
   )
 }

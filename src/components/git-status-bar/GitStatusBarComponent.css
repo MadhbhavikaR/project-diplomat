@@ -1,0 +1,42 @@
+.git-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid #e0e0e0;
+  background-color: #ffffff;
+}
+
+.git-status-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: #333;
+}
+
+.git-branch {
+  font-weight: 600;
+}
+
+.git-dirty {
+  color: #f44336;
+}
+
+.git-sync {
+  color: #666;
+}
+
+.git-status-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.git-action {
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 12px;
+}

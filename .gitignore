@@ -10,6 +10,13 @@
 .specify/
 .venv/
 .vscode/*
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.mypy_cache/
+.pytest_cache/
 *.local
 *.log
 *.njsproj
@@ -27,6 +34,7 @@ coverage/
 dist
 dist-ssr
 dist/
+build/
 e2e/*.js
 e2e/*.map
 lerna-debug.log*
@@ -36,6 +44,7 @@ node_modules/
 npm-debug.log*
 plans/
 pnpm-debug.log*
+screenshots/
 reference_implementation/
 specs/
 testem.log
