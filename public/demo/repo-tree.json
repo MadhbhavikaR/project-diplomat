@@ -1,0 +1,36 @@
+[
+  {
+    "path": "/repo/demo",
+    "name": "demo",
+    "type": "directory",
+    "children": [
+      {
+        "path": "/repo/demo/README.md",
+        "name": "README.md",
+        "type": "file"
+      },
+      {
+        "path": "/repo/demo/agent.json",
+        "name": "agent.json",
+        "type": "file"
+      },
+      {
+        "path": "/repo/demo/tools.json",
+        "name": "tools.json",
+        "type": "file"
+      }
+    ]
+  },
+  {
+    "path": "/repo/src",
+    "name": "src",
+    "type": "directory",
+    "children": [
+      {
+        "path": "/repo/src/main.ts",
+        "name": "main.ts",
+        "type": "file"
+      }
+    ]
+  }
+]

@@ -1,0 +1,24 @@
+{
+  "demo-session-1": [
+    {
+      "id": "evt-1",
+      "title": "Message sent",
+      "payload": { "role": "user", "content": "Create an agent" },
+      "timestamp": "2026-01-23T09:05:00Z"
+    },
+    {
+      "id": "evt-2",
+      "title": "Tool added",
+      "payload": { "tool": "google_search" },
+      "timestamp": "2026-01-23T09:06:00Z"
+    }
+  ],
+  "demo-session-2": [
+    {
+      "id": "evt-3",
+      "title": "Callback executed",
+      "payload": { "callback": "before_agent" },
+      "timestamp": "2026-01-23T10:05:00Z"
+    }
+  ]
+}

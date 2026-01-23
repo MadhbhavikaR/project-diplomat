@@ -1,10 +1,12 @@
 import { apiClient } from './apiClient'
 import type { AgentNode } from '../types/agentBuilder'
 import { getViteEnv } from '../utils/vite-env'
+import { getRuntimeConfig } from '../utils/runtime-config-util'
 
 class AgentBuilderService {
   async loadConfig(agentId: string): Promise<AgentNode> {
     const env = getViteEnv()
+    const { agentConfigApiBase } = getRuntimeConfig()
     if (!env.VITE_API_URL && !env.VITE_API_SERVER_DOMAIN) {
       return {
         isRoot: true,
@@ -17,11 +19,12 @@ class AgentBuilderService {
       }
     }
 
-    return apiClient.get<AgentNode>(`/agents/${agentId}/config`)
+    return apiClient.get<AgentNode>(`${agentConfigApiBase}/${agentId}/config`)
   }
 
   async saveConfig(agentId: string, config: AgentNode): Promise<void> {
-    await apiClient.post(`/agents/${agentId}/config`, config)
+    const { agentConfigApiBase } = getRuntimeConfig()
+    await apiClient.post(`${agentConfigApiBase}/${agentId}/config`, config)
   }
 }
 

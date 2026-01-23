@@ -1,0 +1,6 @@
+{
+  "/repo/demo/README.md": "# Demo Workspace\n\nThis demo data is loaded when VITE_DEMO_MODE=true.\n\n- Edit files and click Save changes\n- Create new files/folders in the explorer\n- Use the assistant to generate content\n",
+  "/repo/demo/agent.json": "{\n  \"name\": \"Demo Agent\",\n  \"model\": \"gemini-2.5-flash\",\n  \"instructions\": \"You are a helpful demo agent.\"\n}\n",
+  "/repo/demo/tools.json": "[\n  {\n    \"name\": \"google_search\",\n    \"type\": \"Built-in tool\"\n  },\n  {\n    \"name\": \"custom_translate\",\n    \"type\": \"Function tool\"\n  }\n]\n",
+  "/repo/src/main.ts": "export const demo = true;\n"
+}

@@ -4,15 +4,16 @@ import { CssBaseline, ThemeProvider } from '@mui/material'
 import './App.css'
 import ChatComponent from './components/chat/ChatComponent'
 import SidePanelComponent from './components/side-panel/SidePanelComponent'
-import EventTabComponent from './components/event-tab/EventTabComponent'
-import SessionTabComponent from './components/session-tab/SessionTabComponent'
-import TraceTabComponent from './components/trace-tab/TraceTabComponent'
 import GitStatusBarComponent from './components/git-status-bar/GitStatusBarComponent'
-import BuilderTabsComponent from './components/builder-tabs/BuilderTabsComponent'
 import CanvasComponent from './components/canvas/CanvasComponent'
 import BuilderAssistantComponent from './components/builder-assistant/BuilderAssistantComponent'
+import FileExplorerComponent from './components/file-explorer/FileExplorerComponent'
+import FileTabsComponent from './components/file-tabs/FileTabsComponent'
+import MonacoEditorComponent from './components/monaco-editor/MonacoEditorComponent'
 import { theme } from './theme/theme'
 import type { QueryClient } from '@tanstack/react-query'
+import { useStore } from './store/store'
+import { repoService } from './services/repoService'
 
 interface AppProps {
   queryClient: QueryClient
@@ -21,10 +22,28 @@ interface AppProps {
 function App({ queryClient }: AppProps) {
   const [showSidePanel, setShowSidePanel] = useState(true)
   const [, setSelectedEvent] = useState<any>(null)
-  const [activeTab, setActiveTab] = useState(0)
   const [sessionId] = useState('session1')
   const [isBuilderMode, setIsBuilderMode] = useState(false)
   const [isAssistantOpen, setIsAssistantOpen] = useState(false)
+  const [topMode, setTopMode] = useState<'edit' | 'test'>('edit')
+
+  const openFiles = useStore(state => state.openFiles)
+  const activeFile = useStore(state => state.activeFile)
+  const updateFileContent = useStore(state => state.updateFileContent)
+  const markSaved = useStore(state => state.markSaved)
+
+  const activeTabData = activeFile ? openFiles[activeFile] : null
+
+  const handleSaveActive = async () => {
+    if (!activeTabData) return
+
+    try {
+      await repoService.saveFile(activeTabData.path, activeTabData.content)
+      markSaved(activeTabData.path)
+    } catch (error) {
+      console.error('Failed to save file', error)
+    }
+  }
 
   // Mock data for demonstration
   const mockApps = ['App 1', 'App 2', 'App 3']
@@ -32,8 +51,6 @@ function App({ queryClient }: AppProps) {
     ['event1', { id: 'event1', title: 'Event 1', data: { key: 'value1' } }],
     ['event2', { id: 'event2', title: 'Event 2', data: { key: 'value2' } }],
   ])
-  const mockTraceData: any[] = []
-
   const handleClosePanel = () => {
     setShowSidePanel(false)
   }
@@ -42,10 +59,6 @@ function App({ queryClient }: AppProps) {
     // Find the event from the mock data
     const event = Array.from(mockEvents.values()).find(e => e.id === eventId)
     setSelectedEvent(event || null)
-  }
-
-  const handleTabChange = (index: number) => {
-    setActiveTab(index)
   }
 
   return (
@@ -78,7 +91,7 @@ function App({ queryClient }: AppProps) {
                 disableBuilderIcon={false}
                 onClosePanel={handleClosePanel}
                 onAppSelectionChange={(e) => console.log('App changed:', e)}
-                onTabChange={handleTabChange}
+                onTabChange={() => undefined}
                 onEventSelected={handleEventSelected}
                 onSessionSelected={(session) => console.log('Session selected:', session)}
                 onSessionReloaded={(session) => console.log('Session reloaded:', session)}
@@ -89,7 +102,11 @@ function App({ queryClient }: AppProps) {
                 onPageChange={(event) => console.log('Page changed:', event)}
                 onCloseSelectedEvent={() => setSelectedEvent(null)}
                 onOpenImageDialog={(imageUrl) => console.log('Open image dialog:', imageUrl)}
-                onOpenAddItemDialog={(open) => console.log('Open add item dialog:', open)}
+                onOpenAddItemDialog={(open) => {
+                  if (open) {
+                    setIsBuilderMode(true)
+                  }
+                }}
                 onEnterBuilderMode={(enter) => setIsBuilderMode(enter)}
               />
             </div>
@@ -105,7 +122,27 @@ function App({ queryClient }: AppProps) {
 
           {/* Main Content Area */}
           <div className="main-content">
-            <GitStatusBarComponent repoPath="/repo" />
+            <div className="top-mode-tabs" role="tablist">
+              <button
+                type="button"
+                className={`top-mode-tab ${topMode === 'edit' ? 'active' : ''}`}
+                aria-selected={topMode === 'edit'}
+                onClick={() => setTopMode('edit')}
+              >
+                Edit Mode
+              </button>
+              <button
+                type="button"
+                className={`top-mode-tab ${topMode === 'test' ? 'active' : ''}`}
+                aria-selected={topMode === 'test'}
+                onClick={() => setTopMode('test')}
+              >
+                Test Mode
+              </button>
+            </div>
+            {!isBuilderMode && topMode === 'edit' && (
+              <GitStatusBarComponent repoPath="/repo" />
+            )}
             {isBuilderMode ? (
               <div className="builder-layout">
                 <div className="builder-toolbar">
@@ -126,9 +163,6 @@ function App({ queryClient }: AppProps) {
                   <div className="builder-canvas">
                     <CanvasComponent />
                   </div>
-                  <div className="builder-tabs">
-                    <BuilderTabsComponent />
-                  </div>
                   <BuilderAssistantComponent
                     isVisible={isAssistantOpen}
                     appName="ADK Demo"
@@ -139,40 +173,33 @@ function App({ queryClient }: AppProps) {
               </div>
             ) : (
               <>
-                {/* Chat Panel - Top area */}
-                <div className="chat-panel-container">
-                  <ChatComponent />
-                </div>
-
-                {/* Session Tab - Bottom area (visible when sessions tab is active) */}
-                {activeTab === 0 && (
-                  <div className="session-tab-container">
-                    <SessionTabComponent
-                      userId="user123"
-                      appName="ADK Demo"
-                      sessionId={sessionId}
-                      onSessionSelected={(session) => console.log('Session selected:', session)}
-                      onSessionReloaded={(session) => console.log('Session reloaded:', session)}
-                    />
+                {topMode === 'test' && (
+                  <div className="chat-panel-container">
+                    <ChatComponent />
                   </div>
                 )}
 
-                {/* Event Tab - Bottom area (visible when events tab is active) */}
-                {activeTab === 1 && (
-                  <div className="event-tab-container">
-                    <TraceTabComponent traceData={[]} sessionId={sessionId} />
-                  </div>
-                )}
-
-                {/* Event Tab - Bottom area (visible when events tab is active) */}
-                {activeTab === 2 && (
-                  <div className="event-tab-container">
-                    <EventTabComponent
-                      eventsMap={mockEvents}
-                      traceData={mockTraceData}
-                      sessionId={sessionId}
-                      onSelectedEvent={handleEventSelected}
-                    />
+                {topMode === 'edit' && (
+                  <div className="workspace-container">
+                    <div className="workspace-sidebar">
+                      <FileExplorerComponent repoPath="/repo" />
+                    </div>
+                    <div className="workspace-editor">
+                      <FileTabsComponent />
+                      {activeTabData ? (
+                        <div className="editor-shell">
+                          <MonacoEditorComponent
+                            filePath={activeTabData.path}
+                            language={activeTabData.language}
+                            value={activeTabData.content}
+                            onChange={(value) => updateFileContent(activeTabData.path, value)}
+                            onSave={handleSaveActive}
+                          />
+                        </div>
+                      ) : (
+                        <div className="editor-empty">Open a file to start editing.</div>
+                      )}
+                    </div>
                   </div>
                 )}
               </>

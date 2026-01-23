@@ -1,5 +1,7 @@
 import { apiClient } from './apiClient'
 import { getViteEnv } from '../utils/vite-env'
+import { getRuntimeConfig } from '../utils/runtime-config-util'
+import { loadDemoData } from '../utils/demo-data'
 
 export interface EventItem {
   id: string
@@ -24,6 +26,14 @@ class EventService {
     params?: { page?: number; pageSize?: number }
   ): Promise<{ items: EventItem[]; nextPageToken: string }> {
     const env = getViteEnv()
+    if (getRuntimeConfig().demoMode) {
+      const demoEvents = await loadDemoData<Record<string, EventItem[]>>('events.json', {})
+      return {
+        items: demoEvents[sessionId] ?? [],
+        nextPageToken: '',
+      }
+    }
+
     if (!env.VITE_API_URL && !env.VITE_API_SERVER_DOMAIN) {
       return { items: [], nextPageToken: '' }
     }

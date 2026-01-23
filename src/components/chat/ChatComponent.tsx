@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useStore } from '../../store/store'
 import { streamChatService } from '../../services/streamChatService'
+import { getRuntimeConfig } from '../../utils/runtime-config-util'
+import { loadDemoData } from '../../utils/demo-data'
 import ChatPanelComponent from '../chat-panel/ChatPanelComponent'
 
 const ChatComponent: React.FC = () => {
@@ -8,6 +10,8 @@ const ChatComponent: React.FC = () => {
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [socket, setSocket] = useState<WebSocket | null>(null)
+  const [demoResponses, setDemoResponses] = useState<string[]>([])
+  const [demoResponseIndex, setDemoResponseIndex] = useState(0)
   const [sessionId] = useState('session_' + Math.random().toString(36).substr(2, 9))
   const [appName] = useState('ADK Demo')
   const [userId] = useState('user_' + Math.random().toString(36).substr(2, 6))
@@ -19,6 +23,17 @@ const ChatComponent: React.FC = () => {
   useEffect(() => {
     // Initialize session
     setSessionLoading(true)
+    if (getRuntimeConfig().demoMode) {
+      loadDemoData<{ welcome?: string; responses?: string[] }>('chat.json', {}).then((data) => {
+        setSessionLoading(false)
+        setMessages([
+          { role: 'bot', content: data.welcome || 'Welcome to the demo! How can I help you today?' },
+        ])
+        setDemoResponses(data.responses || [])
+      })
+      return
+    }
+
     // Simulate session loading
     setTimeout(() => {
       setSessionLoading(false)
@@ -29,6 +44,10 @@ const ChatComponent: React.FC = () => {
   }, [setSessionLoading])
 
   useEffect(() => {
+    if (getRuntimeConfig().demoMode) {
+      return
+    }
+
     const ws = streamChatService.connect(sessionId, (event) => {
       try {
         const payload = JSON.parse(event.data) as { role?: string; content?: string }
@@ -56,6 +75,21 @@ const ChatComponent: React.FC = () => {
     setIsLoading(true)
     setMessagesLoading(true)
     setLoadingAgentResponse(true)
+
+    if (getRuntimeConfig().demoMode) {
+      const response =
+        demoResponses.length > 0
+          ? demoResponses[demoResponseIndex % demoResponses.length]
+          : `Demo response for: ${inputValue}`
+      setTimeout(() => {
+        setMessages(prev => [...prev, { role: 'bot', content: response }])
+        setIsLoading(false)
+        setMessagesLoading(false)
+        setLoadingAgentResponse(false)
+        setDemoResponseIndex((prev) => prev + 1)
+      }, 600)
+      return
+    }
 
     if (socket && socket.readyState === WebSocket.OPEN) {
       streamChatService.sendMessage(socket, {

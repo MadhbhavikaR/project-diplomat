@@ -1,0 +1,20 @@
+[
+  {
+    "id": "demo-session-1",
+    "name": "Demo Session",
+    "agentId": "demo-agent-1",
+    "createdAt": "2026-01-23T09:00:00Z",
+    "updatedAt": "2026-01-23T09:30:00Z",
+    "state": "active",
+    "messageCount": 3
+  },
+  {
+    "id": "demo-session-2",
+    "name": "Tooling Session",
+    "agentId": "demo-agent-2",
+    "createdAt": "2026-01-23T10:00:00Z",
+    "updatedAt": "2026-01-23T10:15:00Z",
+    "state": "paused",
+    "messageCount": 6
+  }
+]

@@ -1,0 +1,9 @@
+{
+  "welcome": "Welcome to the ADK demo workspace! Ask me to create an agent, add tools, or wire a workflow.",
+  "responses": [
+    "Sure — I can scaffold a new agent config. Would you like a chat or tool agent?",
+    "I added a tool placeholder. Tell me the tool name and inputs.",
+    "Here’s a suggested workflow: ingest → plan → execute → report.",
+    "I can also generate a sample YAML or JSON config if you want."
+  ]
+}

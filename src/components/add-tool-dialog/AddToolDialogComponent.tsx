@@ -36,6 +36,11 @@ const TOOL_INFO: Record<string, ToolInfo> = {
     shortDescription: 'Pre-built tools with specialized functionality',
     detailedDescription: 'Built-in tools provide pre-configured functionality for common tasks such as web searching, file operations, memory management, and AI integrations. These tools are optimized for performance and reliability, and can be easily integrated into your agents without additional configuration.',
     docLink: 'https://developer.example.com/tools/built-in'
+  },
+  'Agent tool': {
+    shortDescription: 'Agent tools for calling other agents',
+    detailedDescription: 'Agent tools allow you to invoke other agents as tools within a workflow. Use this when you want to delegate sub-tasks to specialized agents.',
+    docLink: 'https://developer.example.com/tools/agent'
   }
 };
 
@@ -73,10 +78,10 @@ const AddToolDialogComponent: React.FC<AddToolDialogProps> = ({
     if (isOpen) {
       // Reset state when dialog opens
       if (isEditMode && toolName) {
-        if (toolType === 'Function tool') {
-          setToolNameInput(toolName);
-        } else if (toolType === 'Built-in tool') {
+        if (toolType === 'Built-in tool') {
           setSelectedBuiltInTool(toolName);
+        } else {
+          setToolNameInput(toolName);
         }
       } else {
         setToolNameInput('');
@@ -104,7 +109,7 @@ const AddToolDialogComponent: React.FC<AddToolDialogProps> = ({
       const result = {
         toolType,
         isEditMode,
-        name: toolType === 'Function tool' ? toolNameInput.trim() : selectedBuiltInTool
+        name: toolType === 'Built-in tool' ? selectedBuiltInTool : toolNameInput.trim()
       };
 
       onAddTool(result);
@@ -115,7 +120,7 @@ const AddToolDialogComponent: React.FC<AddToolDialogProps> = ({
   };
 
   const isCreateDisabled = (): boolean => {
-    return toolType === 'Function tool' && !toolNameInput.trim();
+    return toolType !== 'Built-in tool' && !toolNameInput.trim();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -176,7 +181,7 @@ const AddToolDialogComponent: React.FC<AddToolDialogProps> = ({
         )}
 
         {/* Function Tool Form */}
-        {toolType === 'Function tool' && (
+        {toolType !== 'Built-in tool' && (
           <div className="form-field">
             <input
               type="text"
@@ -185,7 +190,7 @@ const AddToolDialogComponent: React.FC<AddToolDialogProps> = ({
               value={toolNameInput}
               onChange={(e) => setToolNameInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Enter full function name"
+              placeholder={`Enter ${toolType.toLowerCase()} name`}
               autoFocus
               disabled={isSubmitting}
             />

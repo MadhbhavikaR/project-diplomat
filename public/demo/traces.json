@@ -1,0 +1,21 @@
+{
+  "demo-session-1": [
+    {
+      "id": "trace-1",
+      "name": "Generate Agent",
+      "durationMs": 1200,
+      "startTime": "2026-01-23T09:05:01Z",
+      "endTime": "2026-01-23T09:05:02Z",
+      "children": [
+        {
+          "id": "trace-1-1",
+          "name": "Validate Inputs",
+          "durationMs": 300,
+          "startTime": "2026-01-23T09:05:01Z",
+          "endTime": "2026-01-23T09:05:01Z"
+        }
+      ]
+    }
+  ],
+  "demo-session-2": []
+}

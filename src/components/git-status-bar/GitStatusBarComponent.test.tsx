@@ -6,6 +6,9 @@ import { repoService } from '../../services/repoService'
 jest.mock('../../services/repoService', () => ({
   repoService: {
     getGitStatus: jest.fn(),
+    getGitBranches: jest.fn(),
+    checkoutBranch: jest.fn(),
+    createBranch: jest.fn(),
     commit: jest.fn(),
     reset: jest.fn(),
   },
@@ -28,6 +31,10 @@ describe('GitStatusBarComponent', () => {
       ahead: 1,
       behind: 0,
     })
+    ;(repoService.getGitBranches as jest.Mock).mockResolvedValue([
+      { name: 'main', current: true },
+      { name: 'feature/one', current: false },
+    ])
   })
 
   afterEach(() => {
@@ -37,9 +44,33 @@ describe('GitStatusBarComponent', () => {
   it('renders git status info', async () => {
     renderWithClient()
 
-    expect(await screen.findByText('main')).toBeInTheDocument()
+    expect(await screen.findByText(/main/)).toBeInTheDocument()
     expect(await screen.findByText(/2\s*changes/)).toBeInTheDocument()
     expect(screen.getByText(/↑\s*1\s*↓\s*0/)).toBeInTheDocument()
+  })
+
+  it('switches branches from the selector', async () => {
+    renderWithClient()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle branch menu' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'feature/one' }))
+
+    await waitFor(() => {
+      expect(repoService.checkoutBranch).toHaveBeenCalledWith('/repo', 'feature/one')
+    })
+  })
+
+  it('creates a new branch when provided', async () => {
+    renderWithClient()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle branch menu' }))
+    const input = screen.getByLabelText('New branch name')
+    fireEvent.change(input, { target: { value: 'feature/new' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Create branch' }))
+
+    await waitFor(() => {
+      expect(repoService.createBranch).toHaveBeenCalledWith('/repo', 'feature/new', true)
+    })
   })
 
   it('opens commit dialog and submits', async () => {

@@ -17,8 +17,8 @@ This document tracks the one-to-one migration of the Angular-based ADK Web UI (l
 | Priority | User Stories | Status |
 |----------|-------------|--------|
 | P1 | Chat Interface, Session Management, Side Panel | 🟡 In Progress |
-| P2 | Event Viewer, Trace, Monaco Editor, File System, Git | 🟡 In Progress |
-| P3 | Builder Assistant, Builder Canvas | 🟡 In Progress |
+| P2 | Event Viewer, Trace, Monaco Editor, File System, Git, Builder Canvas | 🟡 In Progress |
+| P3 | Builder Assistant | 🟡 In Progress |
 
 ## Migration Principles Compliance
 
@@ -84,7 +84,7 @@ This document tracks the one-to-one migration of the Angular-based ADK Web UI (l
 | Eval Tab | `adk-web-main/src/app/components/eval-tab/` | `src/components/eval-tab/` | ⚪ Not Started | - |
 | Builder Assistant | `adk-web-main/src/app/components/builder-assistant/` | `src/components/builder-assistant/` | 🟢 Complete | - |
 | Builder Tabs | `adk-web-main/src/app/components/builder-tabs/` | `src/components/builder-tabs/` | 🟡 Partial | - |
-| Canvas | `adk-web-main/src/app/components/canvas/` | `src/components/canvas/` | 🟢 Complete | - |
+| Canvas | `adk-web-main/src/app/components/canvas/` | `src/components/canvas/` | 🟡 Deferred (P2) | - |
 | Code Editor | `adk-web-main/src/app/components/code-editor/` | `src/components/code-editor/` | ⚪ Not Started | - |
 
 ### Phase 5: New Features (Monaco, File System, Git)

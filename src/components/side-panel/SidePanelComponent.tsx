@@ -1,7 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import './SidePanelComponent.css'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../../store/store'
+import SessionTabComponent from '../session-tab/SessionTabComponent'
+import TraceTabComponent from '../trace-tab/TraceTabComponent'
+import EventTabComponent from '../event-tab/EventTabComponent'
+import BuilderTabsComponent from '../builder-tabs/BuilderTabsComponent'
 
 // Define TypeScript interfaces for component props
 interface SidePanelProps {
@@ -80,6 +84,8 @@ const SidePanelComponent: React.FC<SidePanelProps> = ({
   const [activeTab, setActiveTab] = useState(0)
   const [searchTerm, setSearchTerm] = useState('')
   const [isResizing, setIsResizing] = useState(false)
+  const [isAgentMenuOpen, setIsAgentMenuOpen] = useState(false)
+  const agentMenuRef = useRef<HTMLDivElement | null>(null)
   const resizeStartX = useRef(0)
   const resizeStartWidth = useRef(320)
   const navigate = useNavigate()
@@ -100,6 +106,10 @@ const SidePanelComponent: React.FC<SidePanelProps> = ({
   const filteredApps = apps.filter(app =>
     app.toLowerCase().includes(searchTerm.toLowerCase())
   )
+
+  const activeAppLabel = useMemo(() => {
+    return selectedApp || 'Select an agent'
+  }, [selectedApp])
 
   const handleTabChange = (index: number) => {
     setActiveTab(index)
@@ -134,6 +144,27 @@ const SidePanelComponent: React.FC<SidePanelProps> = ({
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value)
   }
+
+  const handleSelectAgent = (app: string) => {
+    onAppSelectionChange({ target: { value: app } })
+    setSearchTerm('')
+    setIsAgentMenuOpen(false)
+  }
+
+  useEffect(() => {
+    if (!isAgentMenuOpen) {
+      return
+    }
+
+    const handleClick = (event: MouseEvent) => {
+      if (!agentMenuRef.current?.contains(event.target as Node)) {
+        setIsAgentMenuOpen(false)
+      }
+    }
+
+    window.addEventListener('click', handleClick)
+    return () => window.removeEventListener('click', handleClick)
+  }, [isAgentMenuOpen])
 
   const handleResizeStart = (event: React.MouseEvent<HTMLDivElement>) => {
     event.preventDefault()
@@ -204,28 +235,49 @@ const SidePanelComponent: React.FC<SidePanelProps> = ({
       {/* App selector */}
       {isApplicationSelectorEnabled && (
         <div className="app-selector">
-          <div className="search-container">
-            <input
-              type="text"
-              placeholder="Search agents..."
-              value={searchTerm}
-              onChange={handleSearchChange}
-              className="search-input"
-            />
+          <div className="app-dropdown" ref={agentMenuRef}>
+            <button
+              type="button"
+              className="app-dropdown-button"
+              onClick={() => setIsAgentMenuOpen((open) => !open)}
+              aria-label="Toggle agent selector"
+            >
+              {activeAppLabel}
+              <span className="app-dropdown-caret">▾</span>
+            </button>
+            {isAgentMenuOpen && (
+              <div className="app-dropdown-menu" role="listbox">
+                <div className="app-dropdown-input">
+                  <input
+                    type="text"
+                    placeholder="Search agents..."
+                    value={searchTerm}
+                    onChange={handleSearchChange}
+                    className="search-input"
+                    disabled={isLoadingApps}
+                  />
+                </div>
+                <div className="app-dropdown-list">
+                  {isLoadingApps && (
+                    <div className="app-dropdown-empty">Loading...</div>
+                  )}
+                  {!isLoadingApps && filteredApps.length === 0 && (
+                    <div className="app-dropdown-empty">No agents found</div>
+                  )}
+                  {!isLoadingApps && filteredApps.map(app => (
+                    <button
+                      key={app}
+                      type="button"
+                      className={`app-dropdown-item ${app === selectedApp ? 'active' : ''}`}
+                      onClick={() => handleSelectAgent(app)}
+                    >
+                      {app}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-          <select
-            value={selectedApp}
-            onChange={handleAppChange}
-            disabled={isLoadingApps}
-            className="app-select"
-          >
-            <option value="" disabled>
-              {isLoadingApps ? 'Loading...' : 'Select an agent'}
-            </option>
-            {filteredApps.map(app => (
-              <option key={app} value={app}>{app}</option>
-            ))}
-          </select>
 
           {!isBuilderMode && (
             <div className="mode-controls">
@@ -252,71 +304,97 @@ const SidePanelComponent: React.FC<SidePanelProps> = ({
       {/* Main content - Tabs */}
       {appName && (
         <div className="tabs-container">
-          <div className="tab-header">
-            <button
-              className={`tab-button ${activeTab === 0 ? 'active' : ''}`}
-              onClick={() => handleTabChange(0)}
-            >
-              Sessions
-            </button>
-            <button
-              className={`tab-button ${activeTab === 1 ? 'active' : ''}`}
-              onClick={() => handleTabChange(1)}
-            >
-              Trace
-            </button>
-            <button
-              className={`tab-button ${activeTab === 2 ? 'active' : ''}`}
-              onClick={() => handleTabChange(2)}
-            >
-              Events
-            </button>
-            <button
-              className={`tab-button ${activeTab === 3 ? 'active' : ''}`}
-              onClick={() => handleTabChange(3)}
-            >
-              State
-            </button>
-            <button
-              className={`tab-button ${activeTab === 4 ? 'active' : ''}`}
-              onClick={() => handleTabChange(4)}
-            >
-              Artifacts
-            </button>
-          </div>
+          {isBuilderMode ? (
+            <div className="tab-content builder-tab-content">
+              <BuilderTabsComponent />
+            </div>
+          ) : (
+            <>
+              <div className="tab-header">
+                <button
+                  className={`tab-button ${activeTab === 0 ? 'active' : ''}`}
+                  onClick={() => handleTabChange(0)}
+                >
+                  Sessions
+                </button>
+                <button
+                  className={`tab-button ${activeTab === 1 ? 'active' : ''}`}
+                  onClick={() => handleTabChange(1)}
+                >
+                  Trace
+                </button>
+                <button
+                  className={`tab-button ${activeTab === 2 ? 'active' : ''}`}
+                  onClick={() => handleTabChange(2)}
+                >
+                  Events
+                </button>
+                <button
+                  className={`tab-button ${activeTab === 3 ? 'active' : ''}`}
+                  onClick={() => handleTabChange(3)}
+                >
+                  State
+                </button>
+                <button
+                  className={`tab-button ${activeTab === 4 ? 'active' : ''}`}
+                  onClick={() => handleTabChange(4)}
+                >
+                  Artifacts
+                </button>
+              </div>
 
-          <div className="tab-content">
-            {activeTab === 0 && (
-              <div className="session-tab">
-                <p>Sessions content</p>
-                {/* Session tab content will be implemented */}
+              <div className="tab-content">
+                {activeTab === 0 && (
+                  <div className="session-tab">
+                    <SessionTabComponent
+                      userId={userId}
+                      appName={appName}
+                      sessionId={sessionId}
+                      onSessionSelected={onSessionSelected}
+                      onSessionReloaded={onSessionReloaded}
+                    />
+                  </div>
+                )}
+                {activeTab === 1 && (
+                  <div className="trace-tab">
+                    <TraceTabComponent traceData={traceData as any[]} sessionId={sessionId} />
+                  </div>
+                )}
+                {activeTab === 2 && (
+                  <div className="events-tab">
+                    <EventTabComponent
+                      eventsMap={eventData}
+                      traceData={traceData as any[]}
+                      sessionId={sessionId}
+                      onSelectedEvent={onEventSelected}
+                    />
+                  </div>
+                )}
+                {activeTab === 3 && (
+                  <div className="state-tab">
+                    {currentSessionState ? (
+                      <pre className="state-json">{JSON.stringify(currentSessionState, null, 2)}</pre>
+                    ) : (
+                      <p className="state-empty">No state data available.</p>
+                    )}
+                  </div>
+                )}
+                {activeTab === 4 && (
+                  <div className="artifacts-tab">
+                    {artifacts.length ? (
+                      <ul className="artifacts-list">
+                        {artifacts.map((artifact, index) => (
+                          <li key={index}>{artifact?.name || `Artifact ${index + 1}`}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="artifacts-empty">No artifacts available.</p>
+                    )}
+                  </div>
+                )}
               </div>
-            )}
-            {activeTab === 1 && (
-              <div className="trace-tab">
-                <p>Trace content</p>
-                {/* Trace tab content will be implemented */}
-              </div>
-            )}
-            {activeTab === 2 && (
-              <div className="events-tab">
-                <p>Events content</p>
-                {/* Events tab content will be implemented */}
-              </div>
-            )}
-            {activeTab === 3 && (
-              <div className="state-tab">
-                <p>State content</p>
-                {/* State tab content will be implemented */}
-              </div>
-            )}
-            {activeTab === 4 && (
-              <div className="artifacts-tab">
-                <p>Artifacts content</p>
-                {/* Artifacts tab content will be implemented */}
-              </div>
-            )}
-          </div>
+            </>
+          )}
         </div>
       )}
 

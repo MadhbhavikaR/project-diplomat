@@ -9,6 +9,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from '../../store/store';
 import { streamChatService } from '../../services/streamChatService';
+import { getRuntimeConfig } from '../../utils/runtime-config-util';
 import './BuilderAssistantComponent.css';
 
 // Define TypeScript interfaces
@@ -53,6 +54,10 @@ const BuilderAssistantComponent: React.FC<BuilderAssistantComponentProps> = ({
 
   useEffect(() => {
     if (!isVisible) {
+      return;
+    }
+
+    if (getRuntimeConfig().demoMode) {
       return;
     }
 
@@ -203,6 +208,10 @@ const BuilderAssistantComponent: React.FC<BuilderAssistantComponentProps> = ({
     onClosePanel();
   };
 
+  const toggleMode = () => {
+    setAssistantMode(assistantMode === 'plan' ? 'act' : 'plan');
+  };
+
   if (!isVisible) return null;
 
   return (
@@ -211,20 +220,6 @@ const BuilderAssistantComponent: React.FC<BuilderAssistantComponentProps> = ({
         <div className="panel-title">
           <span className="assistant-icon">✨</span>
           <span>Assistant</span>
-        </div>
-        <div className="assistant-mode-toggle">
-          <button
-            className={`mode-button ${assistantMode === 'plan' ? 'active' : ''}`}
-            onClick={() => setAssistantMode('plan')}
-          >
-            Plan
-          </button>
-          <button
-            className={`mode-button ${assistantMode === 'act' ? 'active' : ''}`}
-            onClick={() => setAssistantMode('act')}
-          >
-            Act
-          </button>
         </div>
         <button
           className="close-btn"
@@ -277,6 +272,14 @@ const BuilderAssistantComponent: React.FC<BuilderAssistantComponentProps> = ({
 
         <div className="chat-input-container">
           <div className="input-wrapper">
+            <button
+              type="button"
+              className={`mode-toggle-button ${assistantMode}`}
+              onClick={toggleMode}
+              aria-pressed={assistantMode === 'act'}
+            >
+              {assistantMode === 'plan' ? 'Plan' : 'Act'}
+            </button>
             <textarea
               className="assistant-input-box"
               value={userMessage}

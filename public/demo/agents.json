@@ -1,0 +1,41 @@
+[
+  {
+    "id": "demo-agent-1",
+    "name": "Demo Builder",
+    "description": "Helps scaffold agent configurations.",
+    "icon": "code",
+    "type": "code",
+    "tools": [
+      {
+        "id": "tool-1",
+        "name": "google_search",
+        "description": "Search the web",
+        "category": "web",
+        "inputSchema": {},
+        "requiresConfirmation": false
+      }
+    ],
+    "config": {
+      "model": "gemini-2.5-flash",
+      "temperature": 0.7,
+      "maxTokens": 2048,
+      "streamingEnabled": true
+    },
+    "state": "ready"
+  },
+  {
+    "id": "demo-agent-2",
+    "name": "Tooling Assistant",
+    "description": "Recommends tools for workflows.",
+    "icon": "build",
+    "type": "chat",
+    "tools": [],
+    "config": {
+      "model": "gemini-2.5-pro",
+      "temperature": 0.4,
+      "maxTokens": 1024,
+      "streamingEnabled": false
+    },
+    "state": "ready"
+  }
+]

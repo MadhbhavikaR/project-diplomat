@@ -3,6 +3,8 @@ import type { FileNode } from '../../types/file'
 import { repoService } from '../../services/repoService'
 import { useStore } from '../../store/store'
 import ConfirmationDialogComponent from '../dialogs/ConfirmationDialogComponent'
+import { getViteEnv } from '../../utils/vite-env'
+import { getRuntimeConfig } from '../../utils/runtime-config-util'
 import './FileExplorerComponent.css'
 
 interface FileExplorerProps {
@@ -17,10 +19,21 @@ const FileExplorerComponent = ({ repoPath }: FileExplorerProps) => {
   const [createMode, setCreateMode] = useState<'file' | 'folder' | null>(null)
   const [renamePath, setRenamePath] = useState<string | null>(null)
   const [deletePath, setDeletePath] = useState<string | null>(null)
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; path: string | null } | null>(null)
+  const [stagedPaths, setStagedPaths] = useState<Set<string>>(new Set())
+
+  const hasApi = useMemo(() => {
+    const env = getViteEnv()
+    return Boolean(getRuntimeConfig().demoMode || env.VITE_API_URL || env.VITE_API_SERVER_DOMAIN)
+  }, [])
 
   const openFile = useStore(state => state.openFile)
 
   useEffect(() => {
+    if (!hasApi) {
+      return
+    }
+
     const load = async () => {
       try {
         const tree = await repoService.listTree(repoPath)
@@ -31,7 +44,7 @@ const FileExplorerComponent = ({ repoPath }: FileExplorerProps) => {
     }
 
     load()
-  }, [repoPath])
+  }, [repoPath, hasApi])
 
   const selectedNode = useMemo(() => {
     if (!selectedPath) return null
@@ -54,11 +67,43 @@ const FileExplorerComponent = ({ repoPath }: FileExplorerProps) => {
     setExpanded(prev => ({ ...prev, [path]: !prev[path] }))
   }
 
+  const expandAll = (items: FileNode[]) => {
+    const next: Record<string, boolean> = {}
+    const walk = (nodes: FileNode[]) => {
+      nodes.forEach((node) => {
+        if (node.type === 'directory') {
+          next[node.path] = true
+          if (node.children) {
+            walk(node.children)
+          }
+        }
+      })
+    }
+    walk(items)
+    setExpanded(next)
+  }
+
+  const collapseAll = () => {
+    setExpanded({})
+  }
+
+  const refreshTree = async () => {
+    if (!hasApi) {
+      return
+    }
+    try {
+      const tree = await repoService.listTree(repoPath)
+      setNodes(tree)
+    } catch (error) {
+      console.error('Failed to load file tree', error)
+    }
+  }
+
   const handleSelect = async (node: FileNode) => {
     setSelectedPath(node.path)
 
     if (node.type === 'file') {
-      const content = await repoService.readFile(node.path)
+      const content = hasApi ? await repoService.readFile(node.path) : ''
       openFile({
         path: node.path,
         content,
@@ -68,22 +113,124 @@ const FileExplorerComponent = ({ repoPath }: FileExplorerProps) => {
     }
   }
 
+  const getBasePath = () => {
+    if (!selectedNode) {
+      return repoPath
+    }
+
+    if (selectedNode.type === 'directory') {
+      return selectedNode.path
+    }
+
+    return selectedNode.path.substring(0, selectedNode.path.lastIndexOf('/')) || repoPath
+  }
+
+  const addNodeToTree = (items: FileNode[], basePath: string, newNode: FileNode): FileNode[] => {
+    if (!basePath || basePath === repoPath) {
+      return [...items, newNode]
+    }
+
+    return items.map((node) => {
+      if (node.path === basePath && node.type === 'directory') {
+        return {
+          ...node,
+          children: [...(node.children || []), newNode],
+        }
+      }
+
+      if (node.children) {
+        return {
+          ...node,
+          children: addNodeToTree(node.children, basePath, newNode),
+        }
+      }
+
+      return node
+    })
+  }
+
+  const renameNodeInTree = (items: FileNode[], oldPath: string, newPath: string): FileNode[] => {
+    const rename = (node: FileNode): FileNode => {
+      const shouldUpdate = node.path === oldPath || node.path.startsWith(`${oldPath}/`)
+      const nextPath = shouldUpdate ? node.path.replace(oldPath, newPath) : node.path
+      const nextName = node.path === oldPath ? newPath.split('/').pop() || node.name : node.name
+      const nextChildren = node.children ? node.children.map(rename) : node.children
+      return {
+        ...node,
+        path: nextPath,
+        name: nextName,
+        children: nextChildren,
+      }
+    }
+
+    return items.map(rename)
+  }
+
+  const removeNodeFromTree = (items: FileNode[], targetPath: string): FileNode[] => {
+    const filtered = items.filter(node => node.path !== targetPath && !node.path.startsWith(`${targetPath}/`))
+    return filtered.map((node) => ({
+      ...node,
+      children: node.children ? removeNodeFromTree(node.children, targetPath) : node.children,
+    }))
+  }
+
   const handleCreate = async () => {
     if (!newEntryName.trim()) return
 
-    const basePath = selectedNode?.type === 'directory' ? selectedNode.path : repoPath
+    const basePath = getBasePath()
     const targetPath = `${basePath.replace(/\/$/, '')}/${newEntryName}`
+    const mode = createMode
 
     try {
-      if (createMode === 'file') {
-        await repoService.createFile(targetPath)
-      } else if (createMode === 'folder') {
-        await repoService.createFolder(targetPath)
+      if (mode === 'file') {
+        if (hasApi) {
+          await repoService.createFile(targetPath)
+        } else {
+          setNodes((prev) =>
+            addNodeToTree(prev, basePath, {
+              path: targetPath,
+              name: newEntryName,
+              type: 'file',
+            })
+          )
+        }
+      } else if (mode === 'folder') {
+        if (hasApi) {
+          await repoService.createFolder(targetPath)
+        } else {
+          setNodes((prev) =>
+            addNodeToTree(prev, basePath, {
+              path: targetPath,
+              name: newEntryName,
+              type: 'directory',
+              children: [],
+            })
+          )
+        }
       }
       setNewEntryName('')
       setCreateMode(null)
-      const tree = await repoService.listTree(repoPath)
-      setNodes(tree)
+
+      setExpanded((prev) => ({
+        ...prev,
+        ...(basePath && basePath !== repoPath ? { [basePath]: true } : {}),
+      }))
+      setSelectedPath(targetPath)
+
+      if (hasApi) {
+        const tree = await repoService.listTree(repoPath)
+        setNodes(tree)
+      }
+
+      if (mode === 'file') {
+        const content = hasApi ? await repoService.readFile(targetPath) : ''
+        openFile({
+          path: targetPath,
+          content,
+          language: targetPath.split('.').pop() || 'plaintext',
+          isDirty: false,
+        })
+      }
     } catch (error) {
       console.error('Failed to create entry', error)
     }
@@ -96,11 +243,17 @@ const FileExplorerComponent = ({ repoPath }: FileExplorerProps) => {
     const targetPath = `${parentPath}/${newEntryName}`
 
     try {
-      await repoService.renamePath(renamePath, targetPath)
+      if (hasApi) {
+        await repoService.renamePath(renamePath, targetPath)
+      } else {
+        setNodes((prev) => renameNodeInTree(prev, renamePath, targetPath))
+      }
       setRenamePath(null)
       setNewEntryName('')
-      const tree = await repoService.listTree(repoPath)
-      setNodes(tree)
+      if (hasApi) {
+        const tree = await repoService.listTree(repoPath)
+        setNodes(tree)
+      }
     } catch (error) {
       console.error('Failed to rename entry', error)
     }
@@ -110,14 +263,60 @@ const FileExplorerComponent = ({ repoPath }: FileExplorerProps) => {
     setDeletePath(path)
   }
 
+  const handleContextMenu = (event: React.MouseEvent, path: string | null) => {
+    event.preventDefault()
+    if (path) {
+      setSelectedPath(path)
+    }
+    setContextMenu({ x: event.clientX, y: event.clientY, path })
+  }
+
+  const closeContextMenu = () => {
+    setContextMenu(null)
+  }
+
+  const handleAddToCommit = async () => {
+    if (!selectedPath) return
+    try {
+      await repoService.addToCommit(repoPath, selectedPath)
+      setStagedPaths((prev) => new Set(prev).add(selectedPath))
+    } catch (error) {
+      console.error('Failed to add file to commit', error)
+    } finally {
+      closeContextMenu()
+    }
+  }
+
+  const handleRemoveFromCommit = async () => {
+    if (!selectedPath) return
+    try {
+      await repoService.removeFromCommit(repoPath, selectedPath)
+      setStagedPaths((prev) => {
+        const next = new Set(prev)
+        next.delete(selectedPath)
+        return next
+      })
+    } catch (error) {
+      console.error('Failed to remove file from commit', error)
+    } finally {
+      closeContextMenu()
+    }
+  }
+
   const handleDelete = async () => {
     if (!deletePath) return
 
     try {
-      await repoService.deletePath(deletePath)
+      if (hasApi) {
+        await repoService.deletePath(deletePath)
+      } else {
+        setNodes((prev) => removeNodeFromTree(prev, deletePath))
+      }
       setDeletePath(null)
-      const tree = await repoService.listTree(repoPath)
-      setNodes(tree)
+      if (hasApi) {
+        const tree = await repoService.listTree(repoPath)
+        setNodes(tree)
+      }
     } catch (error) {
       console.error('Failed to delete entry', error)
     }
@@ -130,7 +329,10 @@ const FileExplorerComponent = ({ repoPath }: FileExplorerProps) => {
           const isExpanded = expanded[node.path] ?? false
           return (
             <li key={node.path} className={`file-node ${selectedPath === node.path ? 'selected' : ''}`}>
-              <div className="file-node-row">
+              <div
+                className="file-node-row"
+                onContextMenu={(event) => handleContextMenu(event, node.path)}
+              >
                 {node.type === 'directory' && (
                   <button
                     className="file-node-toggle"
@@ -165,34 +367,16 @@ const FileExplorerComponent = ({ repoPath }: FileExplorerProps) => {
   )
 
   return (
-    <div className="file-explorer">
+    <div className="file-explorer" onContextMenu={(event) => handleContextMenu(event, null)}>
       <div className="file-explorer-actions">
-        <button type="button" aria-label="Create new file" onClick={() => setCreateMode('file')}>
-          New File
+        <button type="button" aria-label="Expand all" onClick={() => expandAll(nodes)}>
+          Expand all
         </button>
-        <button type="button" aria-label="Create new folder" onClick={() => setCreateMode('folder')}>
-          New Folder
+        <button type="button" aria-label="Collapse all" onClick={collapseAll}>
+          Collapse all
         </button>
-        <button
-          type="button"
-          aria-label="Rename selected item"
-          onClick={() => {
-            if (selectedPath) {
-              setRenamePath(selectedPath)
-              setNewEntryName(selectedNode?.name || '')
-            }
-          }}
-          disabled={!selectedPath}
-        >
-          Rename
-        </button>
-        <button
-          type="button"
-          aria-label="Delete selected item"
-          onClick={() => selectedPath && confirmDelete(selectedPath)}
-          disabled={!selectedPath}
-        >
-          Delete
+        <button type="button" aria-label="Refresh tree" onClick={refreshTree}>
+          Refresh
         </button>
       </div>
 
@@ -221,6 +405,60 @@ const FileExplorerComponent = ({ repoPath }: FileExplorerProps) => {
       )}
 
       {treeMarkup}
+
+      {contextMenu && (
+        <div
+          className="file-context-menu"
+          style={{ top: contextMenu.y, left: contextMenu.x }}
+          role="menu"
+          onMouseLeave={closeContextMenu}
+        >
+          <button type="button" onClick={() => { setCreateMode('file'); closeContextMenu() }}>
+            New File
+          </button>
+          <button type="button" onClick={() => { setCreateMode('folder'); closeContextMenu() }}>
+            New Folder
+          </button>
+          <button
+            type="button"
+            disabled={!selectedPath}
+            onClick={() => {
+              if (selectedPath) {
+                setRenamePath(selectedPath)
+                setNewEntryName(selectedNode?.name || '')
+              }
+              closeContextMenu()
+            }}
+          >
+            Rename
+          </button>
+          <button
+            type="button"
+            disabled={!selectedPath}
+            onClick={() => {
+              if (selectedPath) {
+                confirmDelete(selectedPath)
+              }
+              closeContextMenu()
+            }}
+          >
+            Delete
+          </button>
+          {selectedPath && stagedPaths.has(selectedPath) ? (
+            <button type="button" onClick={handleRemoveFromCommit}>
+              Remove from commit
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled={!selectedPath}
+              onClick={handleAddToCommit}
+            >
+              Add to commit
+            </button>
+          )}
+        </div>
+      )}
 
       <ConfirmationDialogComponent
         open={Boolean(deletePath)}

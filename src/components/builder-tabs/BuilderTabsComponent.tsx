@@ -1,32 +1,25 @@
 import React, { useState } from 'react';
 import type { AgentNode, ToolNode, CallbackNode } from '../../types/agentBuilder';
 import { getToolIcon } from '../../constants/tool-icons';
+import AddToolDialogComponent from '../add-tool-dialog/AddToolDialogComponent';
+import { useStore } from '../../store/store';
 import './BuilderTabsComponent.scss';
 
 export const BuilderTabsComponent: React.FC = () => {
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
-  const [editingTool, setEditingTool] = useState<ToolNode | null>(null);
-  const [editingCallback, setEditingCallback] = useState<CallbackNode | null>(null);
   const [header, setHeader] = useState('Agent configuration');
+  const [showToolTypeMenu, setShowToolTypeMenu] = useState(false);
+  const [toolDialogType, setToolDialogType] = useState<string>('Built-in tool');
+  const [isToolDialogOpen, setIsToolDialogOpen] = useState(false);
 
-  // Mock agent config for demonstration
-  const [agentConfig, setAgentConfig] = useState<AgentNode>({
-    isRoot: false,
-    name: 'My Agent',
-    agent_class: 'LlmAgent',
-    model: 'gemini-2.5-flash',
-    instruction: 'You are a helpful assistant.',
-    description: 'A helpful AI agent',
-    sub_agents: [],
-    tools: [
-      { toolType: 'Built-in tool', name: 'google_search' },
-      { toolType: 'Custom tool', name: 'my_custom_tool' }
-    ],
-    callbacks: [
-      { type: 'before_agent', name: 'pre_agent_callback' },
-      { type: 'after_agent', name: 'post_agent_callback' }
-    ]
-  });
+  const agentConfig = useStore(state => state.agentConfig);
+  const setAgentConfig = useStore(state => state.setAgentConfig);
+  const addToolToConfig = useStore(state => state.addTool);
+  const removeToolFromConfig = useStore(state => state.removeTool);
+  const addCallbackToConfig = useStore(state => state.addCallback);
+  const removeCallbackFromConfig = useStore(state => state.removeCallback);
+  const addSubAgentToConfig = useStore(state => state.addSubAgent);
+  const removeSubAgentFromConfig = useStore(state => state.removeSubAgent);
 
   // Agent configuration options
   const models = [
@@ -79,15 +72,8 @@ export const BuilderTabsComponent: React.FC = () => {
     setAgentConfig({ ...agentConfig, [field]: value });
   };
 
-  const addTool = (toolType: string) => {
-    const newTool: ToolNode = {
-      toolType: toolType,
-      name: toolType === 'Function tool' ? 'Function tool' : `${toolType}_${Date.now()}`
-    };
-    
-    const updatedTools = [...(agentConfig.tools || []), newTool];
-    setAgentConfig({ ...agentConfig, tools: updatedTools });
-    setEditingTool(newTool);
+  const addTool = (toolData: { toolType: string; name: string }) => {
+    addToolToConfig({ toolType: toolData.toolType, name: toolData.name });
     setSelectedTabIndex(2);
   };
 
@@ -97,41 +83,34 @@ export const BuilderTabsComponent: React.FC = () => {
       name: `${callbackType}_${Date.now()}`
     };
     
-    const updatedCallbacks = [...(agentConfig.callbacks || []), newCallback];
-    setAgentConfig({ ...agentConfig, callbacks: updatedCallbacks });
-    setEditingCallback(newCallback);
+    addCallbackToConfig(newCallback);
     setSelectedTabIndex(CALLBACKS_TAB_INDEX);
   };
 
+  const openToolDialog = (toolType: string) => {
+    setToolDialogType(toolType);
+    setIsToolDialogOpen(true);
+    setShowToolTypeMenu(false);
+  };
+
+  const closeToolDialog = () => {
+    setIsToolDialogOpen(false);
+  };
+
   const deleteTool = (toolName: string) => {
-    const updatedTools = (agentConfig.tools || []).filter(t => t.name !== toolName);
-    setAgentConfig({ ...agentConfig, tools: updatedTools });
+    removeToolFromConfig(toolName);
   };
 
   const deleteCallback = (callbackName: string) => {
-    const updatedCallbacks = (agentConfig.callbacks || []).filter(c => c.name !== callbackName);
-    setAgentConfig({ ...agentConfig, callbacks: updatedCallbacks });
+    removeCallbackFromConfig(callbackName);
   };
 
   const deleteSubAgent = (subAgentName: string) => {
-    const updatedSubAgents = (agentConfig.sub_agents || []).filter(sa => sa.name !== subAgentName);
-    setAgentConfig({ ...agentConfig, sub_agents: updatedSubAgents });
+    removeSubAgentFromConfig(subAgentName);
   };
 
   const addSubAgentWithType = (agentType: string) => {
-    const newSubAgent: AgentNode = {
-      isRoot: false,
-      name: `${agentType}_${Date.now()}`,
-      agent_class: agentType,
-      model: '',
-      instruction: '',
-      sub_agents: [],
-      tools: [],
-      callbacks: []
-    };
-    
-    const updatedSubAgents = [...(agentConfig.sub_agents || []), newSubAgent];
-    setAgentConfig({ ...agentConfig, sub_agents: updatedSubAgents });
+    addSubAgentToConfig(agentType);
   };
 
   const saveChanges = () => {
@@ -293,29 +272,31 @@ export const BuilderTabsComponent: React.FC = () => {
               <div>
                 <button 
                   className="panel-action-button"
-                  onClick={() => {
-                    const menu = document.createElement('div');
-                    menu.className = 'tools-menu';
-                    menu.innerHTML = `
-                      <div>
-                        <button onClick="addTool('Function tool')">Function tool</button>
-                        <button onClick="addTool('Built-in tool')">Built-in tool</button>
-                        <button onClick="addTool('Agent Tool')">Agent tool</button>
-                      </div>
-                    `;
-                    document.body.appendChild(menu);
-                  }}
+                  onClick={() => setShowToolTypeMenu((prev) => !prev)}
                 >
                   <span>add</span>
                 </button>
               </div>
             </div>
+            {showToolTypeMenu && (
+              <div className="tool-type-menu">
+                <button type="button" onClick={() => openToolDialog('Function tool')}>
+                  Function tool
+                </button>
+                <button type="button" onClick={() => openToolDialog('Built-in tool')}>
+                  Built-in tool
+                </button>
+                <button type="button" onClick={() => openToolDialog('Agent tool')}>
+                  Agent tool
+                </button>
+              </div>
+            )}
             <div className="tools-chips-container">
               {agentConfig.tools && agentConfig.tools.length > 0 ? (
                 <div className="tools-list">
                   {agentConfig.tools.map(tool => (
                     <div key={tool.name} className="tool-chip">
-                      <span className="tool-icon">{getToolIcon(tool)}</span>
+                      <span className="tool-icon material-symbols-outlined">{getToolIcon(tool)}</span>
                       <span className="tool-chip-name">{tool.name}</span>
                       <button 
                         className="tool-remove"
@@ -533,29 +514,31 @@ export const BuilderTabsComponent: React.FC = () => {
                 <div>
                   <button 
                     className="panel-action-button"
-                    onClick={() => {
-                      const menu = document.createElement('div');
-                      menu.className = 'tools-menu';
-                      menu.innerHTML = `
-                        <div>
-                          <button onClick="addTool('Function tool')">Function tool</button>
-                          <button onClick="addTool('Built-in tool')">Built-in tool</button>
-                          <button onClick="addTool('Agent Tool')">Agent tool</button>
-                        </div>
-                      `;
-                      document.body.appendChild(menu);
-                    }}
+                    onClick={() => setShowToolTypeMenu((prev) => !prev)}
                   >
                     <span>add</span>
                   </button>
                 </div>
               </div>
+              {showToolTypeMenu && (
+                <div className="tool-type-menu">
+                  <button type="button" onClick={() => openToolDialog('Function tool')}>
+                    Function tool
+                  </button>
+                  <button type="button" onClick={() => openToolDialog('Built-in tool')}>
+                    Built-in tool
+                  </button>
+                  <button type="button" onClick={() => openToolDialog('Agent tool')}>
+                    Agent tool
+                  </button>
+                </div>
+              )}
               <div className="tools-chips-container">
                 {agentConfig.tools && agentConfig.tools.length > 0 ? (
                   <div className="tools-list">
                     {agentConfig.tools.map(tool => (
                       <div key={tool.name} className="tool-chip">
-                        <span className="tool-icon">{getToolIcon(tool)}</span>
+                        <span className="tool-icon material-symbols-outlined">{getToolIcon(tool)}</span>
                         <span className="tool-chip-name">{tool.name}</span>
                         <button 
                           className="tool-remove"
@@ -603,7 +586,7 @@ export const BuilderTabsComponent: React.FC = () => {
                   <div className="tools-list">
                     {agentConfig.sub_agents.map(subAgent => (
                       <div key={subAgent.name} className="tool-chip">
-                        <span className="tool-icon">{getToolIcon(subAgent)}</span>
+                        <span className="tool-icon material-symbols-outlined">{getToolIcon(subAgent)}</span>
                         <span className="tool-chip-name">{subAgent.name}</span>
                         <button 
                           className="tool-remove"
@@ -684,6 +667,15 @@ export const BuilderTabsComponent: React.FC = () => {
           <button className="cancel-button" onClick={cancelChanges}>Cancel</button>
         </div>
       </div>
+      <AddToolDialogComponent
+        isOpen={isToolDialogOpen}
+        toolType={toolDialogType}
+        onAddTool={(toolData) => {
+          addTool({ toolType: toolData.toolType, name: toolData.name })
+          closeToolDialog()
+        }}
+        onCancel={closeToolDialog}
+      />
     </div>
   );
 };
