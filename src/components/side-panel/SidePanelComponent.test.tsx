@@ -330,7 +330,7 @@ describe('SidePanelComponent', () => {
     )
 
     const panel = screen.getByText('Event Details').closest('.event-details-panel')
-    fireEvent.click(within(panel as HTMLElement).getByText('×'))
+    fireEvent.click(within(panel as HTMLElement).getByLabelText('Close event details'))
     expect(mockProps.onCloseSelectedEvent).toHaveBeenCalledTimes(1)
   })
 

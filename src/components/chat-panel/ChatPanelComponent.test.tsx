@@ -376,7 +376,7 @@ describe('ChatPanelComponent', () => {
       </MemoryRouter>
     )
 
-    fireEvent.click(screen.getByText('×'))
+    fireEvent.click(screen.getByLabelText('Remove file'))
     expect(mockProps.onRemoveFile).toHaveBeenCalledWith(0)
   })
 
@@ -402,7 +402,7 @@ describe('ChatPanelComponent', () => {
       </MemoryRouter>
     )
 
-    fireEvent.click(screen.getByText('×'))
+    fireEvent.click(screen.getByLabelText('Close state update'))
     expect(mockProps.onRemoveStateUpdate).toHaveBeenCalled()
   })
 

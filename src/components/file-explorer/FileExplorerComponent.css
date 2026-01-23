@@ -23,6 +23,13 @@
   font-size: 12px;
 }
 
+.file-explorer-actions .icon-only {
+  background-color: #ffffff;
+  border: 1px solid #d0d7de;
+  width: 34px;
+  height: 34px;
+}
+
 .file-explorer-actions button:disabled {
   opacity: 0.5;
   cursor: not-allowed;

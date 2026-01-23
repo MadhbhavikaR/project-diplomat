@@ -27,6 +27,11 @@ const CanvasComponent = () => {
   const [editingDescription, setEditingDescription] = useState('')
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null)
   const [edgeContextMenu, setEdgeContextMenu] = useState<{ x: number; y: number } | null>(null)
+  const [previewEdge, setPreviewEdge] = useState<{ x: number; y: number } | null>(null)
+  const [pan, setPan] = useState({ x: 0, y: 0 })
+  const [zoom, setZoom] = useState(1)
+  const [isPanning, setIsPanning] = useState(false)
+  const panRef = useRef<{ startX: number; startY: number; originX: number; originY: number } | null>(null)
 
   const addToolToConfig = useStore(state => state.addTool)
   const addCallbackToConfig = useStore(state => state.addCallback)
@@ -40,8 +45,9 @@ const CanvasComponent = () => {
   const dragRef = useRef<{ id: string; offsetX: number; offsetY: number } | null>(null)
   const surfaceRef = useRef<HTMLDivElement>(null)
 
-  const NODE_WIDTH = 160
-  const NODE_HEIGHT = 60
+  const NODE_WIDTH = 190
+  const NODE_HEIGHT = 84
+  const GRID_SIZE = 16
 
   const addNode = (type: CanvasNode['type']) => {
     const nextIndex = nodes.length + 1
@@ -74,9 +80,7 @@ const CanvasComponent = () => {
     setSelectedNodeId(nodeId)
     if (connectingFrom && connectingFrom !== nodeId) {
       connectNodes(connectingFrom, nodeId)
-      return
     }
-    setConnectingFrom(nodeId)
   }
 
   const startEditing = (node: CanvasNode) => {
@@ -187,10 +191,12 @@ const CanvasComponent = () => {
     const node = nodes.find((item) => item.id === nodeId)
     if (!node || !surfaceRef.current) return
     const rect = surfaceRef.current.getBoundingClientRect()
+    const worldX = (event.clientX - rect.left - pan.x) / zoom
+    const worldY = (event.clientY - rect.top - pan.y) / zoom
     dragRef.current = {
       id: nodeId,
-      offsetX: event.clientX - rect.left - node.x,
-      offsetY: event.clientY - rect.top - node.y,
+      offsetX: worldX - node.x,
+      offsetY: worldY - node.y,
     }
   }
 
@@ -198,11 +204,98 @@ const CanvasComponent = () => {
     if (!dragRef.current || !surfaceRef.current) return
     const rect = surfaceRef.current.getBoundingClientRect()
     const { id, offsetX, offsetY } = dragRef.current
-    const nextX = event.clientX - rect.left - offsetX
-    const nextY = event.clientY - rect.top - offsetY
+    const worldX = (event.clientX - rect.left - pan.x) / zoom
+    const worldY = (event.clientY - rect.top - pan.y) / zoom
+    const snappedX = Math.round((worldX - offsetX) / GRID_SIZE) * GRID_SIZE
+    const snappedY = Math.round((worldY - offsetY) / GRID_SIZE) * GRID_SIZE
     setNodes((prev) =>
-      prev.map((node) => (node.id === id ? { ...node, x: nextX, y: nextY } : node))
+      prev.map((node) => (node.id === id ? { ...node, x: snappedX, y: snappedY } : node))
     )
+  }
+
+  const handleSurfaceMouseMove = (event: React.MouseEvent) => {
+    if (!connectingFrom || !surfaceRef.current) {
+      setPreviewEdge(null)
+      return
+    }
+
+    const rect = surfaceRef.current.getBoundingClientRect()
+    const worldX = (event.clientX - rect.left - pan.x) / zoom
+    const worldY = (event.clientY - rect.top - pan.y) / zoom
+    setPreviewEdge({
+      x: worldX,
+      y: worldY,
+    })
+  }
+
+  const handleSurfaceMouseDown = (event: React.MouseEvent) => {
+    if (event.button !== 1 || !surfaceRef.current) {
+      return
+    }
+
+    event.preventDefault()
+    const rect = surfaceRef.current.getBoundingClientRect()
+    panRef.current = {
+      startX: event.clientX - rect.left,
+      startY: event.clientY - rect.top,
+      originX: pan.x,
+      originY: pan.y,
+    }
+    setIsPanning(true)
+  }
+
+  const handleSurfacePanMove = (event: React.MouseEvent) => {
+    if (!panRef.current || !surfaceRef.current) return
+    const rect = surfaceRef.current.getBoundingClientRect()
+    const currentX = event.clientX - rect.left
+    const currentY = event.clientY - rect.top
+    setPan({
+      x: panRef.current.originX + (currentX - panRef.current.startX),
+      y: panRef.current.originY + (currentY - panRef.current.startY),
+    })
+  }
+
+  const handleSurfacePanEnd = () => {
+    panRef.current = null
+    setIsPanning(false)
+  }
+  const duplicateNode = (node: CanvasNode) => {
+    const nextIndex = nodes.length + 1
+    const id = `node-${nextIndex}`
+    setNodes((prev) => [
+      ...prev,
+      {
+        ...node,
+        id,
+        label: `${node.label} Copy`,
+        x: node.x + 24,
+        y: node.y + 24,
+      },
+    ])
+  }
+
+
+  const handleWheel = (event: React.WheelEvent) => {
+    if (!surfaceRef.current) return
+    event.preventDefault()
+    const rect = surfaceRef.current.getBoundingClientRect()
+    const mouseX = event.clientX - rect.left
+    const mouseY = event.clientY - rect.top
+    const zoomDelta = event.deltaY > 0 ? -0.05 : 0.05
+    const nextZoom = Math.min(1.6, Math.max(0.6, zoom + zoomDelta))
+    const scale = nextZoom / zoom
+    setZoom(nextZoom)
+    setPan((prev) => ({
+      x: mouseX - (mouseX - prev.x) * scale,
+      y: mouseY - (mouseY - prev.y) * scale,
+    }))
+  }
+
+  const handleSurfaceClick = () => {
+    if (connectingFrom) {
+      setConnectingFrom(null)
+      setPreviewEdge(null)
+    }
   }
 
   const handleMouseUp = () => {
@@ -214,6 +307,16 @@ const CanvasComponent = () => {
     [nodes, selectedNodeId]
   )
 
+  const selectedNodeConnections = useMemo(() => {
+    if (!selectedNodeId) {
+      return { incoming: 0, outgoing: 0 }
+    }
+
+    const incoming = edges.filter((edge) => edge.to === selectedNodeId).length
+    const outgoing = edges.filter((edge) => edge.from === selectedNodeId).length
+    return { incoming, outgoing }
+  }, [edges, selectedNodeId])
+
   const edgesWithCoords = useMemo(() => {
     const lookup = new Map(nodes.map((node) => [node.id, node]))
     return edges
@@ -223,13 +326,15 @@ const CanvasComponent = () => {
         if (!from || !to) return null
         return {
           id: edge.id,
+          fromId: edge.from,
+          toId: edge.to,
           x1: from.x + NODE_WIDTH,
           y1: from.y + NODE_HEIGHT / 2,
           x2: to.x,
           y2: to.y + NODE_HEIGHT / 2,
         }
       })
-      .filter((edge): edge is { id: string; x1: number; y1: number; x2: number; y2: number } => Boolean(edge))
+      .filter((edge): edge is { id: string; fromId: string; toId: string; x1: number; y1: number; x2: number; y2: number } => Boolean(edge))
   }, [edges, nodes])
 
   const buildEdgePath = (edge: { x1: number; y1: number; x2: number; y2: number }) => {
@@ -239,6 +344,13 @@ const CanvasComponent = () => {
     const cx2 = edge.x2 - delta
     const cy2 = edge.y2
     return `M ${edge.x1} ${edge.y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${edge.x2} ${edge.y2}`
+  }
+
+  const getEdgeLabel = (fromId: string, toId: string) => {
+    const fromNode = nodes.find((node) => node.id === fromId)
+    const toNode = nodes.find((node) => node.id === toId)
+    if (!fromNode || !toNode) return ''
+    return `${fromNode.type} → ${toNode.type}`
   }
 
   const handleEdgeContextMenu = (event: React.MouseEvent, edgeId: string) => {
@@ -258,67 +370,125 @@ const CanvasComponent = () => {
     closeEdgeMenu()
   }
 
+  const getNodeIcon = (type: CanvasNode['type']) => {
+    if (type === 'agent') return 'smart_toy'
+    if (type === 'tool') return 'build'
+    return 'bolt'
+  }
+
   return (
     <div className="canvas-wrapper">
       <div className="canvas-toolbar">
         <div className="canvas-toolbar-actions">
-          <button type="button" onClick={() => addNode('agent')} aria-label="Add agent node">
-            Add Agent
+          <button type="button" className="icon-button icon-only" onClick={() => addNode('agent')} aria-label="Add agent node" title="Add Agent">
+            <span className="material-symbols-outlined">smart_toy</span>
+            <span className="sr-only">Add Agent</span>
           </button>
-          <button type="button" onClick={() => addNode('tool')} aria-label="Add tool node">
-            Add Tool
+          <button type="button" className="icon-button icon-only" onClick={() => addNode('tool')} aria-label="Add tool node" title="Add Tool">
+            <span className="material-symbols-outlined">build</span>
+            <span className="sr-only">Add Tool</span>
           </button>
-          <button type="button" onClick={() => addNode('callback')} aria-label="Add callback node">
-            Add Callback
+          <button type="button" className="icon-button icon-only" onClick={() => addNode('callback')} aria-label="Add callback node" title="Add Callback">
+            <span className="material-symbols-outlined">bolt</span>
+            <span className="sr-only">Add Callback</span>
           </button>
         </div>
         <div className="canvas-toolbar-edit">
           <span className="canvas-connection-hint">
             {connectingFrom ? 'Select a node to connect.' : 'Click a node to start connecting.'}
           </span>
-          <button type="button" onClick={handleDeleteSelected} disabled={!selectedNodeId}>
-            Delete Selected
+          <button type="button" className="icon-button icon-only" onClick={handleDeleteSelected} disabled={!selectedNodeId} aria-label="Delete selected node" title="Delete Selected">
+            <span className="material-symbols-outlined">delete</span>
+            <span className="sr-only">Delete Selected</span>
           </button>
         </div>
       </div>
+      <div className="canvas-hints">
+        Tip: Drag nodes, use handles to connect, double-click to edit. Scroll to zoom, middle-mouse drag to pan.
+      </div>
 
       <div
-        className="canvas-surface"
+        className={`canvas-surface ${isPanning ? 'panning' : ''}`}
         ref={surfaceRef}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        onMouseMove={(event) => {
+          handleMouseMove(event)
+          handleSurfaceMouseMove(event)
+          handleSurfacePanMove(event)
+        }}
+        onMouseDown={handleSurfaceMouseDown}
+        onMouseUp={() => {
+          handleMouseUp()
+          handleSurfacePanEnd()
+        }}
+        onMouseLeave={() => {
+          handleMouseUp()
+          handleSurfacePanEnd()
+        }}
+        onClick={handleSurfaceClick}
+        onWheel={handleWheel}
       >
         {nodes.length === 0 ? (
           <div className="canvas-empty">Add nodes to start building.</div>
         ) : (
-          <div className="canvas-nodes">
+          <div
+            className="canvas-nodes"
+            style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}
+          >
             <svg className="canvas-edges" aria-hidden>
+              {connectingFrom && previewEdge && (() => {
+                const fromNode = nodes.find((node) => node.id === connectingFrom)
+                if (!fromNode) return null
+                const previewPath = buildEdgePath({
+                  x1: fromNode.x + NODE_WIDTH,
+                  y1: fromNode.y + NODE_HEIGHT / 2,
+                  x2: previewEdge.x,
+                  y2: previewEdge.y,
+                })
+                return <path key="preview" d={previewPath} className="preview" />
+              })()}
               {edgesWithCoords.map((edge) => (
-                <path
-                  key={edge.id}
-                  d={buildEdgePath(edge)}
-                  className={selectedEdgeId === edge.id ? 'selected' : ''}
-                  onClick={() => setSelectedEdgeId(edge.id)}
-                  onContextMenu={(event) => handleEdgeContextMenu(event, edge.id)}
-                />
+                <g key={edge.id}>
+                  <path
+                    d={buildEdgePath(edge)}
+                    className={selectedEdgeId === edge.id ? 'selected' : ''}
+                    onClick={() => setSelectedEdgeId(edge.id)}
+                    onContextMenu={(event) => handleEdgeContextMenu(event, edge.id)}
+                  />
+                  <text
+                    className="canvas-edge-label"
+                    x={(edge.x1 + edge.x2) / 2}
+                    y={(edge.y1 + edge.y2) / 2 - 6}
+                  >
+                    {getEdgeLabel(edge.fromId, edge.toId)}
+                  </text>
+                </g>
               ))}
             </svg>
             {nodes.map((node) => (
               <div
                 key={node.id}
-                className={`canvas-node ${node.type} ${selectedNodeId === node.id ? 'selected' : ''} ${connectingFrom === node.id ? 'connecting' : ''}`}
+                className={`canvas-node ${node.type} ${selectedNodeId === node.id ? 'selected' : ''} ${connectingFrom === node.id ? 'connecting' : ''} ${connectingFrom && !canConnect(nodes.find((n) => n.id === connectingFrom)?.type || 'agent', node.type) ? 'disabled-connect' : ''}`}
                 style={{ left: node.x, top: node.y }}
                 onClick={() => handleNodeClick(node.id)}
                 onMouseDown={(event) => handleMouseDown(event, node.id)}
                 onDoubleClick={() => startEditing(node)}
                 role="button"
               >
-                <div className="connection-handle incoming" onClick={() => connectingFrom && connectNodes(connectingFrom, node.id)} />
-                <div className="connection-handle outgoing" onClick={(event) => {
-                  event.stopPropagation()
-                  setConnectingFrom(node.id)
-                }} />
+                <div
+                  className="connection-handle incoming"
+                  onClick={() => connectingFrom && connectNodes(connectingFrom, node.id)}
+                />
+                <div
+                  className="connection-handle outgoing"
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    if (selectedNodeId !== node.id) {
+                      setSelectedNodeId(node.id)
+                      return
+                    }
+                    setConnectingFrom(node.id)
+                  }}
+                />
                 {editingNodeId === node.id ? (
                   <div className="canvas-node-editor" onClick={(event) => event.stopPropagation()}>
                     <input
@@ -339,11 +509,43 @@ const CanvasComponent = () => {
                   </div>
                 ) : (
                   <>
-                    <div className="canvas-node-title">{node.label}</div>
+                    <div className="canvas-node-header">
+                      <span className={`canvas-node-icon material-symbols-outlined ${node.type}`}>
+                        {getNodeIcon(node.type)}
+                      </span>
+                      <div className="canvas-node-title">{node.label}</div>
+                    </div>
                     {node.description && (
                       <div className="canvas-node-description">{node.description}</div>
                     )}
                     <div className="canvas-node-meta">{node.type}</div>
+                    <div className="canvas-node-actions">
+                      <button
+                        type="button"
+                        className="canvas-node-action icon-button"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          duplicateNode(node)
+                        }}
+                        title="Duplicate"
+                      >
+                        <span className="material-symbols-outlined">content_copy</span>
+                        <span className="sr-only">Duplicate</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="canvas-node-action icon-button"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          setSelectedNodeId(node.id)
+                          handleDeleteSelected()
+                        }}
+                        title="Delete"
+                      >
+                        <span className="material-symbols-outlined">delete</span>
+                        <span className="sr-only">Delete</span>
+                      </button>
+                    </div>
                   </>
                 )}
               </div>
@@ -360,6 +562,12 @@ const CanvasComponent = () => {
                 onChange={(event) => handleNodeLabelChange(event.target.value)}
               />
             </label>
+            <div className="canvas-inspector-metrics">
+              <div><strong>Type:</strong> {selectedNode.type}</div>
+              <div><strong>Incoming:</strong> {selectedNodeConnections.incoming}</div>
+              <div><strong>Outgoing:</strong> {selectedNodeConnections.outgoing}</div>
+              <div><strong>Position:</strong> {Math.round(selectedNode.x)}, {Math.round(selectedNode.y)}</div>
+            </div>
             <div className="canvas-inspector-meta">Type: {selectedNode.type}</div>
           </div>
         )}

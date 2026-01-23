@@ -132,7 +132,9 @@ const GitStatusBarComponent = ({ repoPath }: GitStatusBarProps) => {
             onClick={() => setIsBranchMenuOpen((open) => !open)}
           >
             {status?.branch || 'main'}
-            <span className="git-branch-caret">▾</span>
+            <span className="git-branch-caret material-symbols-outlined" aria-hidden>
+              expand_more
+            </span>
           </button>
           {isBranchMenuOpen && (
             <div className="git-branch-menu" role="listbox">

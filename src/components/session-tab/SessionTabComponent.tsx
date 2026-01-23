@@ -44,6 +44,10 @@ const SessionTabComponent: React.FC<SessionTabProps> = ({
     loadSessions(true)
   }, [userId, appName])
 
+  useEffect(() => {
+    setSessionsInStore(sessions)
+  }, [sessions, setSessionsInStore])
+
   // Debounced filter change handler
   const handleFilterChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value
@@ -76,17 +80,12 @@ const SessionTabComponent: React.FC<SessionTabProps> = ({
           )
         : response.items
 
-      setSessions((prev) => {
-        const nextSessions = reset ? filtered : [...prev, ...filtered]
-        setSessionsInStore(nextSessions)
-        return nextSessions
-      })
+      setSessions((prev) => (reset ? filtered : [...prev, ...filtered]))
       setCanLoadMore(Boolean(response.nextPageToken))
       setPageToken(response.nextPageToken)
     } catch (error) {
       console.error('Failed to load sessions', error)
       setSessions([])
-      setSessionsInStore([])
       setCanLoadMore(false)
       setPageToken('')
     } finally {
@@ -104,11 +103,7 @@ const SessionTabComponent: React.FC<SessionTabProps> = ({
     try {
       const nextPage = Number(pageToken)
       const response = await sessionService.listSessions({ page: nextPage, pageSize: 20 })
-      setSessions((prev) => {
-        const nextSessions = [...prev, ...response.items]
-        setSessionsInStore(nextSessions)
-        return nextSessions
-      })
+      setSessions((prev) => [...prev, ...response.items])
       setCanLoadMore(Boolean(response.nextPageToken))
       setPageToken(response.nextPageToken)
     } catch (error) {

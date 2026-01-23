@@ -45,7 +45,7 @@ describe('FileExplorerComponent', () => {
     render(<FileExplorerComponent repoPath="/repo" />)
 
     expect(await screen.findByText('src')).toBeInTheDocument()
-    fireEvent.click(screen.getByText('▸'))
+    fireEvent.click(screen.getByLabelText('Expand src'))
     expect(await screen.findByText('main.ts')).toBeInTheDocument()
   })
 
@@ -59,7 +59,7 @@ describe('FileExplorerComponent', () => {
     render(<FileExplorerComponent repoPath="/repo" />)
 
     fireEvent.click(await screen.findByText('src'))
-    fireEvent.click(screen.getByText('▸'))
+    fireEvent.click(screen.getByLabelText('Expand src'))
     fireEvent.click(await screen.findByText('main.ts'))
 
     await waitFor(() => {

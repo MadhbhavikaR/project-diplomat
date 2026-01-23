@@ -46,7 +46,7 @@ describe('FileTabsComponent', () => {
 
     render(<FileTabsComponent />)
 
-    fireEvent.click(screen.getByText('×'))
+    fireEvent.click(screen.getByLabelText('Close file'))
     expect(closeFile).toHaveBeenCalledWith('/test/file.ts')
   })
 })

@@ -147,7 +147,9 @@ const AddToolDialogComponent: React.FC<AddToolDialogProps> = ({
         {toolInfo && (
           <div className="tool-info-container">
             <div className="tool-info-header" onClick={toggleToolInfo}>
-              <span className="tool-info-icon">ℹ️</span>
+              <span className="tool-info-icon material-symbols-outlined" aria-hidden>
+                info
+              </span>
               <div className="tool-info-title">
                 <span>Tool Information</span>
               </div>
@@ -157,7 +159,9 @@ const AddToolDialogComponent: React.FC<AddToolDialogProps> = ({
                 onClick={(e) => { e.stopPropagation(); toggleToolInfo(); }}
                 aria-label="Toggle tool information"
               >
-                {isToolInfoExpanded ? '▲' : '▼'}
+                <span className="material-symbols-outlined" aria-hidden>
+                  {isToolInfoExpanded ? 'expand_less' : 'expand_more'}
+                </span>
               </button>
             </div>
 
@@ -173,7 +177,10 @@ const AddToolDialogComponent: React.FC<AddToolDialogProps> = ({
                   rel="noopener noreferrer"
                   className="tool-info-link"
                 >
-                  🔗 View Official Documentation
+                  <span className="material-symbols-outlined" aria-hidden>
+                    open_in_new
+                  </span>
+                  <span>View Official Documentation</span>
                 </a>
               </div>
             </div>

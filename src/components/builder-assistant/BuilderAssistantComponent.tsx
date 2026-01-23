@@ -37,6 +37,7 @@ const BuilderAssistantComponent: React.FC<BuilderAssistantComponentProps> = ({
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [shouldAutoScroll, setShouldAutoScroll] = useState<boolean>(false);
   const [socket, setSocket] = useState<WebSocket | null>(null);
+  const [activeTab, setActiveTab] = useState<'chat' | 'help'>('chat');
   const chatMessagesRef = useRef<HTMLDivElement>(null);
   const assistantMode = useStore(state => state.assistantMode);
   const setAssistantMode = useStore(state => state.setAssistantMode);
@@ -225,78 +226,126 @@ const BuilderAssistantComponent: React.FC<BuilderAssistantComponentProps> = ({
           className="close-btn"
           onClick={handleClosePanel}
           title="Close assistant panel"
+          aria-label="Close assistant panel"
         >
-          ✕
+          <span className="material-symbols-outlined" aria-hidden>
+            close
+          </span>
         </button>
       </div>
 
       <div className="panel-content">
-        <div className="chat-messages" ref={chatMessagesRef}>
-          {messages.length === 0 ? (
-            <div className="assistant-placeholder">
-              <div className="large-icon">🤖</div>
-              <h3>Assistant Ready</h3>
-              <p>Your builder assistant is ready to help you build agents.</p>
-            </div>
-          ) : (
-            messages.map((message, index) => (
-              <div
-                key={index}
-                className={message.role === 'user' ? 'user-message' : 'bot-message'}
-              >
-                <div className="message-card">
-                  {message.isLoading ? (
-                    <div className="loading-message">
-                      <span className="dots">・・・</span>
+        <div className="assistant-tab-layout">
+          <div className="assistant-tab-rail" role="tablist" aria-orientation="vertical">
+            <button
+              className={`assistant-tab-button ${activeTab === 'chat' ? 'active' : ''}`}
+              onClick={() => setActiveTab('chat')}
+              aria-label="Chat"
+            >
+              <span className="material-symbols-outlined" aria-hidden>
+                chat
+              </span>
+              <span className="tab-label">Chat</span>
+            </button>
+            <button
+              className={`assistant-tab-button ${activeTab === 'help' ? 'active' : ''}`}
+              onClick={() => setActiveTab('help')}
+              aria-label="Help"
+            >
+              <span className="material-symbols-outlined" aria-hidden>
+                help
+              </span>
+              <span className="tab-label">Help</span>
+            </button>
+          </div>
+          <div className="assistant-tab-body">
+            {activeTab === 'chat' && (
+              <>
+                <div className="chat-messages" ref={chatMessagesRef}>
+                  {messages.length === 0 ? (
+                    <div className="assistant-placeholder">
+                      <div className="large-icon">🤖</div>
+                      <h3>Assistant Ready</h3>
+                      <p>Your builder assistant is ready to help you build agents.</p>
                     </div>
                   ) : (
-                    <>
-                      {message.role === 'bot' && (
-                        <div className="bot-label">Assistant</div>
-                      )}
-                      <div className="message-text">
-                        {message.text.split('\n').map((line, i) => (
-                          <React.Fragment key={i}>
-                            {line}
-                            <br />
-                          </React.Fragment>
-                        ))}
+                    messages.map((message, index) => (
+                      <div
+                        key={index}
+                        className={message.role === 'user' ? 'user-message' : 'bot-message'}
+                      >
+                        <div className="message-card">
+                          {message.isLoading ? (
+                            <div className="loading-message">
+                              <span className="material-symbols-outlined dots" aria-hidden>
+                                more_horiz
+                              </span>
+                            </div>
+                          ) : (
+                            <>
+                              {message.role === 'bot' && (
+                                <div className="bot-label">Assistant</div>
+                              )}
+                              <div className="message-text">
+                                {message.text.split('\n').map((line, i) => (
+                                  <React.Fragment key={i}>
+                                    {line}
+                                    <br />
+                                  </React.Fragment>
+                                ))}
+                              </div>
+                            </>
+                          )}
+                        </div>
                       </div>
-                    </>
+                    ))
                   )}
                 </div>
-              </div>
-            ))
-          )}
-        </div>
 
-        <div className="chat-input-container">
-          <div className="input-wrapper">
-            <button
-              type="button"
-              className={`mode-toggle-button ${assistantMode}`}
-              onClick={toggleMode}
-              aria-pressed={assistantMode === 'act'}
-            >
-              {assistantMode === 'plan' ? 'Plan' : 'Act'}
-            </button>
-            <textarea
-              className="assistant-input-box"
-              value={userMessage}
-              onChange={(e) => setUserMessage(e.target.value)}
-              placeholder="Ask Gemini to build your agent"
-              onKeyDown={handleKeyDown}
-              disabled={isGenerating}
-              rows={1}
-            />
-            <button
-              className="send-button"
-              onClick={() => sendMessage(userMessage)}
-              disabled={!userMessage.trim() || isGenerating}
-              title="Send message"
-            >
-              ↩️
-            </button>
+                <div className="chat-input-container">
+                  <div className="input-wrapper">
+                    <button
+                      type="button"
+                      className={`mode-toggle-button ${assistantMode}`}
+                      onClick={toggleMode}
+                      aria-pressed={assistantMode === 'act'}
+                    >
+                      {assistantMode === 'plan' ? 'Plan' : 'Act'}
+                    </button>
+                    <textarea
+                      className="assistant-input-box"
+                      value={userMessage}
+                      onChange={(e) => setUserMessage(e.target.value)}
+                      placeholder="Ask Gemini to build your agent"
+                      onKeyDown={handleKeyDown}
+                      disabled={isGenerating}
+                      rows={1}
+                    />
+                    <button
+                      className="send-button"
+                      onClick={() => sendMessage(userMessage)}
+                      disabled={!userMessage.trim() || isGenerating}
+                      title="Send message"
+                    >
+                      <span className="material-symbols-outlined" aria-hidden>
+                        send
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+            {activeTab === 'help' && (
+              <div className="assistant-help">
+                <h3>How to use the Assistant</h3>
+                <ul>
+                  <li>Use Plan mode for guidance and steps.</li>
+                  <li>Use Act mode to execute specific changes.</li>
+                  <li>Ask for tools, agents, and workflow scaffolds.</li>
+                  <li>Double‑click nodes in the canvas to edit.</li>
+                </ul>
+              </div>
+            )}
           </div>
         </div>
       </div>

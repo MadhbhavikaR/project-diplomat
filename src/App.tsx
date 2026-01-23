@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { CssBaseline, ThemeProvider } from '@mui/material'
 import './App.css'
@@ -33,6 +33,40 @@ function App({ queryClient }: AppProps) {
   const markSaved = useStore(state => state.markSaved)
 
   const activeTabData = activeFile ? openFiles[activeFile] : null
+
+  useEffect(() => {
+    const applyButtonTitles = () => {
+      const buttons = document.querySelectorAll('button')
+      buttons.forEach((button) => {
+        if (button.getAttribute('title')) {
+          return
+        }
+
+        const ariaLabel = button.getAttribute('aria-label')
+        if (ariaLabel) {
+          button.setAttribute('title', ariaLabel)
+          return
+        }
+
+        const text = (button.textContent || '').trim()
+        if (text) {
+          button.setAttribute('title', text)
+        }
+      })
+    }
+
+    applyButtonTitles()
+
+    const observer = new MutationObserver(() => {
+      applyButtonTitles()
+    })
+
+    observer.observe(document.body, { childList: true, subtree: true })
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [])
 
   const handleSaveActive = async () => {
     if (!activeTabData) return
@@ -116,7 +150,9 @@ function App({ queryClient }: AppProps) {
               onClick={() => setShowSidePanel(true)}
               aria-label="Expand side panel"
             >
-              ☰
+              <span className="material-symbols-outlined" aria-hidden>
+                menu
+              </span>
             </button>
           )}
 
@@ -129,6 +165,9 @@ function App({ queryClient }: AppProps) {
                 aria-selected={topMode === 'edit'}
                 onClick={() => setTopMode('edit')}
               >
+                <span className="material-symbols-outlined" aria-hidden>
+                  edit
+                </span>
                 Edit Mode
               </button>
               <button
@@ -137,6 +176,9 @@ function App({ queryClient }: AppProps) {
                 aria-selected={topMode === 'test'}
                 onClick={() => setTopMode('test')}
               >
+                <span className="material-symbols-outlined" aria-hidden>
+                  science
+                </span>
                 Test Mode
               </button>
             </div>

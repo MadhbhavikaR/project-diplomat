@@ -2,6 +2,7 @@
 .angular/
 .DS_Store
 .DS_Store/
+Thumbs.db
 .env*
 .idea
 .idea/
@@ -19,6 +20,7 @@ __pycache__/
 .pytest_cache/
 *.local
 *.log
+*.tmp
 *.njsproj
 *.ntvs*
 *.sln

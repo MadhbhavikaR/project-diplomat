@@ -381,40 +381,54 @@ export const BuilderTabsComponent: React.FC = () => {
     <div className="builder-tabs-container">
       <div className="builder-tab-content">
         {/* Tab Navigation */}
-        <div className="tab-navigation">
-          <button
-            className={`tab-button ${selectedTabIndex === 0 ? 'active' : ''}`}
-            onClick={() => setSelectedTabIndex(0)}
-          >
-            Configuration
-          </button>
-          <button
-            className={`tab-button ${selectedTabIndex === 1 ? 'active' : ''}`}
-            onClick={() => setSelectedTabIndex(1)}
-          >
-            Sub Agents
-          </button>
-          {agentConfig.agent_class === 'LlmAgent' && (
+        <div className="builder-tab-layout">
+          <div className="builder-tab-rail" role="tablist" aria-orientation="vertical">
             <button
-              className={`tab-button ${selectedTabIndex === 2 ? 'active' : ''}`}
-              onClick={() => setSelectedTabIndex(2)}
+              className={`tab-button ${selectedTabIndex === 0 ? 'active' : ''}`}
+              onClick={() => setSelectedTabIndex(0)}
             >
-              Tools
+              <span className="material-symbols-outlined" aria-hidden>
+                tune
+              </span>
+              <span className="tab-label">Configuration</span>
             </button>
-          )}
-          <button
-            className={`tab-button ${selectedTabIndex === 3 ? 'active' : ''}`}
-            onClick={() => setSelectedTabIndex(3)}
-          >
-            Callbacks
-          </button>
-        </div>
-        <div className="agent-breadcrumb-container">
+            <button
+              className={`tab-button ${selectedTabIndex === 1 ? 'active' : ''}`}
+              onClick={() => setSelectedTabIndex(1)}
+            >
+              <span className="material-symbols-outlined" aria-hidden>
+                group_work
+              </span>
+              <span className="tab-label">Sub Agents</span>
+            </button>
+            {agentConfig.agent_class === 'LlmAgent' && (
+              <button
+                className={`tab-button ${selectedTabIndex === 2 ? 'active' : ''}`}
+                onClick={() => setSelectedTabIndex(2)}
+              >
+                <span className="material-symbols-outlined" aria-hidden>
+                  build
+                </span>
+                <span className="tab-label">Tools</span>
+              </button>
+            )}
+            <button
+              className={`tab-button ${selectedTabIndex === 3 ? 'active' : ''}`}
+              onClick={() => setSelectedTabIndex(3)}
+            >
+              <span className="material-symbols-outlined" aria-hidden>
+                bolt
+              </span>
+              <span className="tab-label">Callbacks</span>
+            </button>
+          </div>
+          <div className="builder-tab-body">
+            <div className="agent-breadcrumb-container">
           <div className="breadcrumb-chip current-agent">
             {agentConfig.name}
           </div>
         </div>
-        <div className="content-wrapper">
+            <div className="content-wrapper">
           <div className="builder-panel-wrapper">
             <div className="panel-title">Configuration</div>
             <div>
@@ -661,10 +675,11 @@ export const BuilderTabsComponent: React.FC = () => {
             </div>
           </div>
         </div>
-
-        <div className="action-buttons">
-          <button className="save-button" onClick={saveChanges}>Save</button>
-          <button className="cancel-button" onClick={cancelChanges}>Cancel</button>
+            <div className="action-buttons">
+              <button className="save-button" onClick={saveChanges}>Save</button>
+              <button className="cancel-button" onClick={cancelChanges}>Cancel</button>
+            </div>
+          </div>
         </div>
       </div>
       <AddToolDialogComponent

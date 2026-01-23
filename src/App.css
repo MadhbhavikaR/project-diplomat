@@ -37,6 +37,7 @@
   background-color: #ffffff;
   border-bottom: 1px solid #e0e0e0;
   flex-wrap: wrap;
+  overflow-x: auto;
 }
 
 .top-mode-tab {
@@ -46,6 +47,9 @@
   border-radius: 6px;
   font-size: 13px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .top-mode-tab.active {

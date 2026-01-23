@@ -44,8 +44,12 @@ const FileTabsComponent = () => {
                 event.stopPropagation()
                 closeFile(tab.path)
               }}
+              aria-label="Close file"
+              title="Close file"
             >
-              ×
+              <span className="material-symbols-outlined" aria-hidden>
+                close
+              </span>
             </button>
           </div>
         ))}

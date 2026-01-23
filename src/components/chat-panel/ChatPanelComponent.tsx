@@ -306,8 +306,12 @@ const ChatPanelComponent: React.FC<ChatPanelProps> = ({
                   <button
                     onClick={() => onRemoveFile(index)}
                     className="remove-file-button"
+                    aria-label="Remove file"
+                    title="Remove file"
                   >
-                    ×
+                    <span className="material-symbols-outlined" aria-hidden>
+                      close
+                    </span>
                   </button>
                 </div>
               ))}
@@ -345,8 +349,12 @@ const ChatPanelComponent: React.FC<ChatPanelProps> = ({
               <button
                 onClick={onRemoveStateUpdate}
                 className="close-state-update"
+                aria-label="Close state update"
+                title="Close state update"
               >
-                ×
+                <span className="material-symbols-outlined" aria-hidden>
+                  close
+                </span>
               </button>
             </div>
             <div className="state-update-content">

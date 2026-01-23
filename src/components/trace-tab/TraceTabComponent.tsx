@@ -62,7 +62,9 @@ const TraceTabComponent = ({ traceData, sessionId }: TraceTabProps) => {
               onClick={() => toggleNode(node.id)}
               aria-label={isExpanded ? 'Collapse trace node' : 'Expand trace node'}
             >
-              {isExpanded ? '▾' : '▸'}
+              <span className="material-symbols-outlined" aria-hidden>
+                {isExpanded ? 'expand_more' : 'chevron_right'}
+              </span>
             </button>
           )}
           {!hasChildren && <span className="trace-toggle-placeholder" />}

@@ -79,18 +79,8 @@ const SidePanelComponent: React.FC<SidePanelProps> = ({
   onCloseSelectedEvent,
   onOpenImageDialog,
   onOpenAddItemDialog,
-  onEnterBuilderMode
+  onEnterBuilderMode,
 }) => {
-  const [activeTab, setActiveTab] = useState(0)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [isResizing, setIsResizing] = useState(false)
-  const [isAgentMenuOpen, setIsAgentMenuOpen] = useState(false)
-  const agentMenuRef = useRef<HTMLDivElement | null>(null)
-  const resizeStartX = useRef(0)
-  const resizeStartWidth = useRef(320)
-  const navigate = useNavigate()
-  
-  // Access Zustand store state and actions
   const isSessionLoading = useStore(state => state.isSessionLoading)
   const currentSession = useStore(state => state.currentSession)
   const setCurrentSession = useStore(state => state.setCurrentSession)
@@ -98,6 +88,14 @@ const SidePanelComponent: React.FC<SidePanelProps> = ({
   const setSelectedEvent = useStore(state => state.setSelectedEvent)
   const uiState = useStore(state => state.uiState)
   const setUiState = useStore(state => state.setUiState)
+  const navigate = useNavigate()
+  const [activeTab, setActiveTab] = useState(0)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [isAgentMenuOpen, setIsAgentMenuOpen] = useState(false)
+  const agentMenuRef = useRef<HTMLDivElement | null>(null)
+  const [isResizing, setIsResizing] = useState(false)
+  const resizeStartX = useRef(0)
+  const resizeStartWidth = useRef(0)
   const [panelWidth, setPanelWidth] = useState<number>(
     typeof uiState?.sidePanelWidth === 'number' ? uiState.sidePanelWidth : 320
   )
@@ -226,8 +224,11 @@ const SidePanelComponent: React.FC<SidePanelProps> = ({
             className="close-button"
             onClick={onClosePanel}
             title="Collapse panel"
+            aria-label="Collapse panel"
           >
-            ×
+            <span className="material-symbols-outlined" aria-hidden>
+              close
+            </span>
           </button>
         </div>
       </div>
@@ -243,7 +244,9 @@ const SidePanelComponent: React.FC<SidePanelProps> = ({
               aria-label="Toggle agent selector"
             >
               {activeAppLabel}
-              <span className="app-dropdown-caret">▾</span>
+              <span className="app-dropdown-caret material-symbols-outlined" aria-hidden>
+                expand_more
+              </span>
             </button>
             {isAgentMenuOpen && (
               <div className="app-dropdown-menu" role="listbox">
@@ -285,16 +288,22 @@ const SidePanelComponent: React.FC<SidePanelProps> = ({
                 className="add-button"
                 onClick={() => onOpenAddItemDialog(true)}
                 title="Create new agent"
+                aria-label="Create new agent"
               >
-                +
+                <span className="material-symbols-outlined" aria-hidden>
+                  add
+                </span>
               </button>
               <button
                 className={`edit-button ${disableBuilderIcon ? 'disabled' : ''}`}
                 onClick={() => !disableBuilderIcon && onEnterBuilderMode(true)}
                 title={disableBuilderIcon ? 'This agent was not built by builder' : 'Edit in Builder Mode'}
                 disabled={disableBuilderIcon}
+                aria-label="Edit in Builder Mode"
               >
-                ✏️
+                <span className="material-symbols-outlined" aria-hidden>
+                  edit
+                </span>
               </button>
             </div>
           )}
@@ -310,40 +319,61 @@ const SidePanelComponent: React.FC<SidePanelProps> = ({
             </div>
           ) : (
             <>
-              <div className="tab-header">
-                <button
-                  className={`tab-button ${activeTab === 0 ? 'active' : ''}`}
-                  onClick={() => handleTabChange(0)}
-                >
-                  Sessions
-                </button>
-                <button
-                  className={`tab-button ${activeTab === 1 ? 'active' : ''}`}
-                  onClick={() => handleTabChange(1)}
-                >
-                  Trace
-                </button>
-                <button
-                  className={`tab-button ${activeTab === 2 ? 'active' : ''}`}
-                  onClick={() => handleTabChange(2)}
-                >
-                  Events
-                </button>
-                <button
-                  className={`tab-button ${activeTab === 3 ? 'active' : ''}`}
-                  onClick={() => handleTabChange(3)}
-                >
-                  State
-                </button>
-                <button
-                  className={`tab-button ${activeTab === 4 ? 'active' : ''}`}
-                  onClick={() => handleTabChange(4)}
-                >
-                  Artifacts
-                </button>
-              </div>
+              <div className="tab-layout">
+                <div className="tab-rail" role="tablist" aria-orientation="vertical">
+                  <button
+                    className={`tab-button ${activeTab === 0 ? 'active' : ''}`}
+                    onClick={() => handleTabChange(0)}
+                    aria-label="Sessions"
+                  >
+                    <span className="material-symbols-outlined" aria-hidden>
+                      forum
+                    </span>
+                    <span className="tab-label">Sessions</span>
+                  </button>
+                  <button
+                    className={`tab-button ${activeTab === 1 ? 'active' : ''}`}
+                    onClick={() => handleTabChange(1)}
+                    aria-label="Trace"
+                  >
+                    <span className="material-symbols-outlined" aria-hidden>
+                      timeline
+                    </span>
+                    <span className="tab-label">Trace</span>
+                  </button>
+                  <button
+                    className={`tab-button ${activeTab === 2 ? 'active' : ''}`}
+                    onClick={() => handleTabChange(2)}
+                    aria-label="Events"
+                  >
+                    <span className="material-symbols-outlined" aria-hidden>
+                      event_note
+                    </span>
+                    <span className="tab-label">Events</span>
+                  </button>
+                  <button
+                    className={`tab-button ${activeTab === 3 ? 'active' : ''}`}
+                    onClick={() => handleTabChange(3)}
+                    aria-label="State"
+                  >
+                    <span className="material-symbols-outlined" aria-hidden>
+                      data_object
+                    </span>
+                    <span className="tab-label">State</span>
+                  </button>
+                  <button
+                    className={`tab-button ${activeTab === 4 ? 'active' : ''}`}
+                    onClick={() => handleTabChange(4)}
+                    aria-label="Artifacts"
+                  >
+                    <span className="material-symbols-outlined" aria-hidden>
+                      inventory_2
+                    </span>
+                    <span className="tab-label">Artifacts</span>
+                  </button>
+                </div>
 
-              <div className="tab-content">
+                <div className="tab-content">
                 {activeTab === 0 && (
                   <div className="session-tab">
                     <SessionTabComponent
@@ -392,6 +422,7 @@ const SidePanelComponent: React.FC<SidePanelProps> = ({
                     )}
                   </div>
                 )}
+                </div>
               </div>
             </>
           )}
@@ -405,8 +436,11 @@ const SidePanelComponent: React.FC<SidePanelProps> = ({
             <button
               className="close-event-button"
               onClick={onCloseSelectedEvent}
+              aria-label="Close event details"
             >
-              ×
+              <span className="material-symbols-outlined" aria-hidden>
+                close
+              </span>
             </button>
           </div>
           <div className="event-details-content">
@@ -421,5 +455,4 @@ const SidePanelComponent: React.FC<SidePanelProps> = ({
     </div>
   )
 }
-
 export default SidePanelComponent

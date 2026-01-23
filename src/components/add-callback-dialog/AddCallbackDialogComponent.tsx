@@ -109,7 +109,9 @@ const AddCallbackDialogComponent: React.FC<AddCallbackDialogProps> = ({
         {getCallbackInfo() && (
           <div className="callback-info-container">
             <div className="callback-info-header" onClick={toggleCallbackInfo}>
-              <span className="callback-info-icon">ℹ️</span>
+              <span className="callback-info-icon material-symbols-outlined" aria-hidden>
+                info
+              </span>
               <div className="callback-info-title">
                 <span>Callback Information</span>
               </div>
@@ -119,7 +121,9 @@ const AddCallbackDialogComponent: React.FC<AddCallbackDialogProps> = ({
                 aria-label="Toggle callback information"
                 onClick={(e) => { e.stopPropagation(); toggleCallbackInfo() }}
               >
-                {isCallbackInfoExpanded ? '▲' : '▼'}
+                <span className="material-symbols-outlined" aria-hidden>
+                  {isCallbackInfoExpanded ? 'expand_less' : 'expand_more'}
+                </span>
               </button>
             </div>
 
@@ -136,7 +140,10 @@ const AddCallbackDialogComponent: React.FC<AddCallbackDialogProps> = ({
                     rel="noopener noreferrer" 
                     className="callback-info-link"
                   >
-                    🔗 View Official Documentation
+                    <span className="material-symbols-outlined" aria-hidden>
+                      open_in_new
+                    </span>
+                    <span>View Official Documentation</span>
                   </a>
                 </div>
               </div>

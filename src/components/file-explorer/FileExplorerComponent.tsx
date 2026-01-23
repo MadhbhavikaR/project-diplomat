@@ -340,7 +340,9 @@ const FileExplorerComponent = ({ repoPath }: FileExplorerProps) => {
                     aria-label={isExpanded ? `Collapse ${node.name}` : `Expand ${node.name}`}
                     onClick={() => toggleNode(node.path)}
                   >
-                    {isExpanded ? '▾' : '▸'}
+                    <span className="material-symbols-outlined" aria-hidden>
+                      {isExpanded ? 'expand_more' : 'chevron_right'}
+                    </span>
                   </button>
                 )}
                 {node.type === 'file' && <span className="file-node-toggle-placeholder" />}
@@ -369,14 +371,17 @@ const FileExplorerComponent = ({ repoPath }: FileExplorerProps) => {
   return (
     <div className="file-explorer" onContextMenu={(event) => handleContextMenu(event, null)}>
       <div className="file-explorer-actions">
-        <button type="button" aria-label="Expand all" onClick={() => expandAll(nodes)}>
-          Expand all
+        <button type="button" className="icon-button icon-only" aria-label="Expand all" title="Expand all" onClick={() => expandAll(nodes)}>
+          <span className="material-symbols-outlined">unfold_more</span>
+          <span className="sr-only">Expand all</span>
         </button>
-        <button type="button" aria-label="Collapse all" onClick={collapseAll}>
-          Collapse all
+        <button type="button" className="icon-button icon-only" aria-label="Collapse all" title="Collapse all" onClick={collapseAll}>
+          <span className="material-symbols-outlined">unfold_less</span>
+          <span className="sr-only">Collapse all</span>
         </button>
-        <button type="button" aria-label="Refresh tree" onClick={refreshTree}>
-          Refresh
+        <button type="button" className="icon-button icon-only" aria-label="Refresh tree" title="Refresh" onClick={refreshTree}>
+          <span className="material-symbols-outlined">refresh</span>
+          <span className="sr-only">Refresh</span>
         </button>
       </div>
 
