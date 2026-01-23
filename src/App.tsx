@@ -5,11 +5,13 @@ import ChatComponent from './components/chat/ChatComponent'
 import SidePanelComponent from './components/side-panel/SidePanelComponent'
 import ChatPanelComponent from './components/chat-panel/ChatPanelComponent'
 import EventTabComponent from './components/event-tab/EventTabComponent'
+import SessionTabComponent from './components/session-tab/SessionTabComponent'
 
 function App() {
   const [showSidePanel, setShowSidePanel] = useState(true)
   const [selectedEvent, setSelectedEvent] = useState<any>(null)
   const [activeTab, setActiveTab] = useState(0)
+  const [sessionId, setSessionId] = useState('session1')
 
   // Mock data for demonstration
   const mockApps = ['App 1', 'App 2', 'App 3']
@@ -118,6 +120,19 @@ function App() {
           />
         </div>
 
+        {/* Session Tab - Bottom area (visible when sessions tab is active) */}
+        {activeTab === 0 && (
+          <div className="session-tab-container">
+            <SessionTabComponent
+              userId="user123"
+              appName="ADK Demo"
+              sessionId={sessionId}
+              onSessionSelected={(session) => console.log('Session selected:', session)}
+              onSessionReloaded={(session) => console.log('Session reloaded:', session)}
+            />
+          </div>
+        )}
+
         {/* Event Tab - Bottom area (visible when events tab is active) */}
         {activeTab === 2 && (
           <div className="event-tab-container">
@@ -131,6 +146,13 @@ function App() {
 
         <Routes>
           <Route path="/" element={<ChatComponent />} />
+          <Route path="/sessions" element={<SessionTabComponent
+            userId="user123"
+            appName="ADK Demo"
+            sessionId={sessionId}
+            onSessionSelected={(session) => console.log('Session selected:', session)}
+            onSessionReloaded={(session) => console.log('Session reloaded:', session)}
+          />} />
         </Routes>
       </div>
     </div>
